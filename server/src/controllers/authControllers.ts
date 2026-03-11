@@ -3,112 +3,88 @@ import { CookieOptions } from "express"
 import bcrypt from "bcrypt"
 import userModel from "../models/user.model"
 import { generateTokens } from "../utils/generateToken"
+import asyncHandler from "../utils/asyncHandler"
+import ApiError from "../utils/ApiError"
 
-const signup = async (req: Request, res: Response): Promise<void> => {
-    try {
+const signup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-        const { phoneNo, username, password } = req.body
+    const { phoneNo, username, password } = req.body;
 
-        if (!phoneNo || !username || !password) {
-            res.status(400).json({
-                success: false,
-                message: "All fields are required"
-            })
-            return
-        }
-
-        const existingUser = await userModel.findOne({ phoneNo })
-
-        if (existingUser) {
-            res.status(409).json({
-                success: false,
-                message: "User already exists"
-            })
-            return
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10)
-
-        const user = await userModel.create({
-            phoneNo,
-            username,
-            password: hashedPassword
-        })
-
-        res.status(201).json({
-            success: true,
-            message: "User registered successfully",
-        })
-
-    } catch (error) {
-        console.log("Signup error:", error)
-
-        res.status(500).json({
-            success: false,
-            message: "Server error"
-        })
+    if (!phoneNo || !username || !password) {
+        throw new ApiError(400, "All fields are required");
     }
-}
 
-const login = async (req: Request, res: Response): Promise<Response> => {
-    try {
-        const { phoneNo, password } = req.body
+    const existingUser = await userModel.findOne({ phoneNo });
 
-        if (!phoneNo || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Phone number and password required"
-            })
-            
-        }
+    if (existingUser) {
+        throw new ApiError(409, "User already exists");
+    }
 
-        const user = await userModel.findOne({ phoneNo })
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            })
-        }
+    const user = await userModel.create({
+        phoneNo,
+        username,
+        password: hashedPassword
+    });
 
-        const isPasswordValid = await bcrypt.compare(password, user.password)
+    res.status(201).json({
+        success: true,
+        message: "User registered successfully",
+        user
+    });
 
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid credentials"
-            })
-        }
+});
 
-        const { accessToken, refreshToken } = generateTokens(user._id.toString())
+const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-        user.refreshToken = refreshToken
-        await user.save({validateBeforeSave:false})
-        const loggedInUser = await userModel.findOne({phoneNo}).select("-password -refreshToken");
-        const options: CookieOptions = {
-            httpOnly:true,
-            secure:false,
-            sameSite:"lax"
-        }
+    const { phoneNo, password } = req.body;
 
-        return res
-        .status(201)
-        .cookie("accessToken",accessToken,options)
-        .cookie("refreshToken",refreshToken,options)
+    if (!phoneNo || !password) {
+        throw new ApiError(400, "Phone number and password required");
+    }
+
+    const user = await userModel.findOne({ phoneNo });
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid credentials");
+    }
+
+    const { accessToken, refreshToken } = await generateTokens(user._id.toString());
+
+    console.log("accessToken : ", accessToken)
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    const loggedInUser = await userModel
+        .findOne({ phoneNo })
+        .select("-password -refreshToken");
+
+    const options: CookieOptions = {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax"
+    };
+
+    // console.log("loggedinUser : ", loggedInUser)
+
+    res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json({
-            message:"successfully login",
-            user:loggedInUser,
-            refreshToken:refreshToken
-        })
+            success: true,
+            message: "Successfully logged in",
+            user: loggedInUser
+        });
 
-    } catch (error) {
-        console.log("Login error:", error)
-
-        return res.status(500).json({
-            success: false,
-            message: "Server error"
-        })
-    }
-}
+});
 
 export default { signup, login }

@@ -1,0 +1,72 @@
+import { Server, Socket } from "socket.io"
+import Message from "../models/message.model"
+import Conversation from "../models/conversations.model"
+import User from "../models/user.model"
+
+const onlineUsers = new Map<string, string>()
+
+let ID = ""
+
+export function chatSocket(io: Server, socket: Socket) {
+
+  // user connected
+  socket.on("user_connected", async (userId: string) => {
+    ID = userId
+
+    onlineUsers.set(userId, socket.id)
+
+    const connectedUser = await User.findByIdAndUpdate(userId, { isOnline: true })
+
+    // console.log("connectedUser : ", connectedUser)
+
+    // console.log("online users:", onlineUsers)
+  })
+
+
+  // join conversation room
+  socket.on("join_conversation", (conversationId: string) => {
+
+    socket.join(conversationId)
+
+    console.log(`socketId ${socket.id} joined conversationId ${conversationId}`)
+  })
+
+
+  // send message
+  socket.on("send_message", async (data) => {
+
+    const { conversationId, senderId, message } = data
+
+    const newMessage = await Message.create({
+      conversationId,
+      senderId,
+      content: message,
+      status:[
+          { userId: senderId, state:"sent" }
+        ]
+    })
+
+    // console.log("msg from socket : ", newMessage)
+
+    await Conversation.findByIdAndUpdate(
+      conversationId,
+      {
+        lastMessage: {
+          text: message,
+          senderId,
+          timestamp: new Date()
+        }
+      }
+    )
+
+    io.to(conversationId).emit("receive_message", newMessage)
+
+  })
+
+}
+
+export async function disconnectSocket(socket : Socket) {
+    // console.log("disconnected socket : ", socket)
+    const disConnectedUser = await User.findByIdAndUpdate(ID, { isOnline: false })
+    
+}

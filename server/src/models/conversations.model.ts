@@ -50,4 +50,8 @@ const conversationSchema = new Schema<IConversation>(
   { timestamps: true }
 );
 
+conversationSchema.index({
+  participants: 1
+})
+
 export default mongoose.model<IConversation>("Conversation", conversationSchema);

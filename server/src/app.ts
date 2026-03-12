@@ -4,8 +4,9 @@ import dotenv from 'dotenv'
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger";
 
-import router from './routes/auth.routes'
-import userRoute from './routes/user.routes';
+import authRouter from './routes/auth.routes'
+import userRoute from './routes/conversation.routes';
+import messageRoute from './routes/message.routes';
 
 dotenv.config(
     {
@@ -25,8 +26,10 @@ app.use(express.json())
 // swagger route
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use("/api/auth", router)
-app.use("/user", userRoute)
+app.use("/api/auth", authRouter)
+app.use("/api/user", userRoute)
+app.use("/api/user/message", messageRoute)
+
 // userRoute
 
 

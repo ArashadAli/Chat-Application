@@ -1,6 +1,12 @@
 import express from 'express'
 import verifyJWT from '../middleware/authMiddleware'
-import sendUserProfile from '../controllers/sendUserProfile'
+import sendUserConversation from '../controllers/sendUserConveersation'
+import sendUser from '../controllers/sendUser'
+import sendChatRequest from '../controllers/chatRequest.controllers'
+import getPendingRequest from '../controllers/getPendingRequest.controllers'
+import acceptChatRequest from '../controllers/acceptChatRequest'
+import createIndividualConversation from '../controllers/chatIndividualy'
+import createGroupConversation from '../controllers/groupConversation'
 
 const userRoute = express.Router()
 
@@ -50,6 +56,16 @@ const userRoute = express.Router()
  *       401:
  *         description: Unauthorized user
  */
-userRoute.get("/profile", verifyJWT, sendUserProfile)
+userRoute.get("/conversation", verifyJWT, sendUserConversation)
+userRoute.post("/conversation/individual", verifyJWT, createIndividualConversation)
+userRoute.post("/conversation/group", verifyJWT, createGroupConversation)
+
+userRoute.get("/:searchId", verifyJWT, sendUser)
+
+userRoute.post("/chat-request", verifyJWT, sendChatRequest)
+userRoute.get("/chat-request", verifyJWT, getPendingRequest)
+
+userRoute.post("/chat-request/accept", verifyJWT, acceptChatRequest)
+
 
 export default userRoute

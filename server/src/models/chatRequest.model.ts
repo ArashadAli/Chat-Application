@@ -29,4 +29,14 @@ const chatRequestSchema = new Schema<IChatRequest>(
   { timestamps: true }
 );
 
+chatRequestSchema.index({
+  senderId: 1,
+  receiverId: 1
+}, { unique: true })
+
+chatRequestSchema.index({
+  receiverId: 1,
+  status: 1
+})
+
 export default mongoose.model<IChatRequest>("ChatRequest", chatRequestSchema);

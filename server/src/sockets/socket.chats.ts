@@ -3,19 +3,20 @@ import Message from "../models/message.model"
 import Conversation from "../models/conversations.model"
 import User from "../models/user.model"
 
-const onlineUsers = new Map<string, string>()
 
-let ID = ""
+const onlineUsers = new Map<string, string>()
+const socketToUser = new Map<string, string>()
+
 
 export function chatSocket(io: Server, socket: Socket) {
 
   // user connected
   socket.on("user_connected", async (userId: string) => {
-    ID = userId
-
+    
     onlineUsers.set(userId, socket.id)
+    socketToUser.set(socket.id, userId)
 
-    const connectedUser = await User.findByIdAndUpdate(userId, { isOnline: true })
+    await User.findByIdAndUpdate(userId, { isOnline: true })
 
     // console.log("connectedUser : ", connectedUser)
 
@@ -66,7 +67,12 @@ export function chatSocket(io: Server, socket: Socket) {
 }
 
 export async function disconnectSocket(socket : Socket) {
-    // console.log("disconnected socket : ", socket)
-    const disConnectedUser = await User.findByIdAndUpdate(ID, { isOnline: false })
+
+    const userId = socketToUser.get(socket.id)
+    if (!userId) return
+    
+    await User.findByIdAndUpdate(userId, { isOnline: false })
+    onlineUsers.delete(userId)
+    socketToUser.delete(socket.id)
     
 }

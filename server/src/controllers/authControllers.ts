@@ -5,6 +5,7 @@ import userModel from "../models/user.model"
 import { generateTokens } from "../utils/generateToken"
 import asyncHandler from "../utils/asyncHandler"
 import ApiError from "../utils/ApiError"
+import { logger } from "../utils/logger"
 
 const signup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
@@ -14,10 +15,12 @@ const signup = asyncHandler(async (req: Request, res: Response): Promise<void> =
         throw new ApiError(400, "All fields are required");
     }
 
+    // logger.info("user data from frontend : ", req.body)
+
     const existingUser = await userModel.findOne({ phoneNo });
 
     if (existingUser) {
-        throw new ApiError(409, "User already exists");
+        throw new ApiError(409, "user already exists");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -30,7 +33,7 @@ const signup = asyncHandler(async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json({
         success: true,
-        message: "User registered successfully",
+        message: "user registered successfully",
         user
     });
 
@@ -39,6 +42,8 @@ const signup = asyncHandler(async (req: Request, res: Response): Promise<void> =
 const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
     const { phoneNo, password } = req.body;
+
+    // logger.info("login datails from frontend : ", req.body)
 
     if (!phoneNo || !password) {
         throw new ApiError(400, "Phone number and password required");

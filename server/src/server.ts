@@ -17,7 +17,7 @@ const io = new Server(server, {
 registerSocketHandlers(io)
 
 dbConnection().then(() => {
-  logger.info("database connected and server started")
+//   logger.info("database connected and server started")
   server.listen(process.env.PORT || 3000, () => {
     console.log(`server running at http://localhost:${process.env.PORT}`)
   })

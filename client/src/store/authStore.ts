@@ -1,17 +1,10 @@
-// src/store/authStore.ts
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export interface User {
-  _id: string;
-  phoneNo: string;
-  username: string;
-}
+import type { LoginUser } from "../schemas/auth/LoginResSchema";
 
 interface AuthState {
-  user: User | null;
-  setUser: (user: User) => void;
+  user: LoginUser | null;
+  setUser: (user: LoginUser) => void;
   logout: () => void;
 }
 
@@ -23,7 +16,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null }),
     }),
     {
-      name: "auth-storage", // persisted in localStorage
+      name: "auth-storage",
     }
   )
 );

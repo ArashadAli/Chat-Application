@@ -2,6 +2,9 @@ import express from "express";
 import authControllers from "../controllers/authControllers";
 import { signupSchema, loginSchema } from "../schemas/auth.schema";
 import validateSchema from "../middleware/validateSchema"
+import verifyJWT from "../middleware/authMiddleware";
+import { AuthRequest } from "../types/authRequest";
+import { Response } from "express";
 
 const router = express.Router()
 
@@ -146,5 +149,24 @@ router.post('/signup',validateSchema(signupSchema), authControllers.signup)
  *         description: Invalid Credentials
  */
 router.post('/login',validateSchema(loginSchema), authControllers.login)
+
+router.get('/me', verifyJWT, (req : AuthRequest, res : Response) => {
+    const loggedInUser = req.user
+    if(!loggedInUser){
+        return res.json({success : false, message : "UnAuthorized User"})
+    }
+
+    return res
+            .status(200)
+            .json(
+                {
+                    success:true,
+                    message : "Successfully data fetched",
+                    loggedInUser
+                }
+            )
+})
+
+router.get('/logout', verifyJWT, authControllers.logout)
 
 export default router

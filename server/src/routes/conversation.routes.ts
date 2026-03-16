@@ -7,6 +7,7 @@ import getPendingRequest from '../controllers/getPendingRequest.controllers'
 import acceptChatRequest from '../controllers/acceptChatRequest'
 import createIndividualConversation from '../controllers/chatIndividualy'
 import createGroupConversation from '../controllers/groupConversation'
+import sendConversationIdDetails from '../controllers/sendConversationIdDetails'
 
 const userRoute = express.Router()
 
@@ -56,7 +57,9 @@ const userRoute = express.Router()
  *       401:
  *         description: Unauthorized user
  */
-userRoute.get("/conversation", verifyJWT, sendUserConversation)
+userRoute.get("/conversation", verifyJWT, sendUserConversation) // All ConversationId Where User is Participants
+userRoute.get("/conversation/:conversationId", verifyJWT, sendConversationIdDetails)
+
 userRoute.post("/conversation/individual", verifyJWT, createIndividualConversation)
 userRoute.post("/conversation/group", verifyJWT, createGroupConversation)
 

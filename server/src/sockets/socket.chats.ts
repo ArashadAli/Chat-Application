@@ -12,7 +12,7 @@ export function chatSocket(io: Server, socket: Socket) {
 
   // user connected
   socket.on("user_connected", async (userId: string) => {
-    
+
     onlineUsers.set(userId, socket.id)
     socketToUser.set(socket.id, userId)
 
@@ -25,11 +25,32 @@ export function chatSocket(io: Server, socket: Socket) {
 
 
   // join conversation room
-  socket.on("join_conversation", (conversationId: string) => {
+  socket.on("join_conversation", async (conversationId: string) => {
 
     socket.join(conversationId)
 
-    console.log(`socketId ${socket.id} joined conversationId ${conversationId}`)
+    const userId = socketToUser.get(socket.id)
+
+    if (!userId) return
+
+    await Message.updateMany(
+      {
+        conversationId,
+        senderId: { $ne: userId },
+        "status.userId": userId
+      },
+      {
+        $set: {
+          "status.$[elem].state": "delivered"
+        }
+      },
+      {
+        arrayFilters: [
+          { "elem.userId": userId, "elem.state": "sent" }
+        ]
+      }
+    )
+
   })
 
 
@@ -42,9 +63,9 @@ export function chatSocket(io: Server, socket: Socket) {
       conversationId,
       senderId,
       content: message,
-      status:[
-          { userId: senderId, state:"sent" }
-        ]
+      status: [
+        { userId: senderId, state: "sent" }
+      ]
     })
 
     // console.log("msg from socket : ", newMessage)
@@ -66,13 +87,13 @@ export function chatSocket(io: Server, socket: Socket) {
 
 }
 
-export async function disconnectSocket(socket : Socket) {
+export async function disconnectSocket(socket: Socket) {
 
-    const userId = socketToUser.get(socket.id)
-    if (!userId) return
-    
-    await User.findByIdAndUpdate(userId, { isOnline: false })
-    onlineUsers.delete(userId)
-    socketToUser.delete(socket.id)
-    
+  const userId = socketToUser.get(socket.id)
+  if (!userId) return
+
+  await User.findByIdAndUpdate(userId, { isOnline: false })
+  onlineUsers.delete(userId)
+  socketToUser.delete(socket.id)
+
 }

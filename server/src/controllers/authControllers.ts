@@ -5,6 +5,7 @@ import userModel from "../models/user.model"
 import { generateTokens } from "../utils/generateToken"
 import asyncHandler from "../utils/asyncHandler"
 import ApiError from "../utils/ApiError"
+import { AuthRequest } from "../types/authRequest"
 import { logger } from "../utils/logger"
 
 const signup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -25,7 +26,7 @@ const signup = asyncHandler(async (req: Request, res: Response): Promise<void> =
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await userModel.create({
+    await userModel.create({
         phoneNo,
         username,
         password: hashedPassword
@@ -34,7 +35,6 @@ const signup = asyncHandler(async (req: Request, res: Response): Promise<void> =
     res.status(201).json({
         success: true,
         message: "user registered successfully",
-        user
     });
 
 });
@@ -92,4 +92,28 @@ const login = asyncHandler(async (req: Request, res: Response): Promise<void> =>
 
 });
 
-export default { signup, login }
+const logout = asyncHandler(async (req : AuthRequest, res : Response): Promise<void> => {
+    await userModel.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set:{
+          refreshToken:undefined
+        }
+      },
+      {
+        new : true
+      }
+    )
+    const options: CookieOptions = {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax"
+    };
+    res
+    .status(200)
+    .clearCookie("accessToken",options)
+    .clearCookie("refreshToken",options)
+    .json({message:"user logged out"})
+})
+
+export default { signup, login, logout }

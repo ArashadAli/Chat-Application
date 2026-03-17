@@ -1,5 +1,3 @@
-
-
 export type MessageState = "sent" | "delivered" | "read";
 
 export interface MessageStatus {
@@ -28,41 +26,21 @@ export interface ConversationDetailsResponse {
   messages: Message[];
 }
 
-
-
-export const conversationDetailsResponseSchema = {
+export const conversationDetailsResSchema = {
   validate(data: unknown): ConversationDetailsResponse {
     if (typeof data !== "object" || data === null) {
       throw new Error("Conversation details: expected an object");
     }
-
     const d = data as any;
-
-    if (typeof d.success !== "boolean") {
-      throw new Error("Conversation details: missing 'success'");
-    }
-    if (!Array.isArray(d.messages)) {
-      throw new Error("Conversation details: missing 'messages' array");
-    }
-
+    if (typeof d.success !== "boolean") throw new Error("Missing 'success'");
+    if (!Array.isArray(d.messages)) throw new Error("Missing 'messages' array");
     for (const msg of d.messages) {
-      if (typeof msg._id !== "string") {
-        throw new Error("Message: missing _id");
-      }
-      if (typeof msg.senderId !== "object" || msg.senderId === null) {
+      if (typeof msg._id !== "string") throw new Error("Message: missing _id");
+      if (typeof msg.senderId !== "object" || msg.senderId === null)
         throw new Error("Message: senderId must be a populated object");
-      }
-      if (typeof msg.senderId._id !== "string") {
-        throw new Error("Message: senderId._id missing");
-      }
-      if (typeof msg.content !== "string") {
-        throw new Error("Message: missing content");
-      }
-      if (!Array.isArray(msg.status)) {
-        throw new Error("Message: missing status array");
-      }
+      if (typeof msg.content !== "string") throw new Error("Message: missing content");
+      if (!Array.isArray(msg.status)) throw new Error("Message: missing status array");
     }
-
     return data as ConversationDetailsResponse;
   },
 };

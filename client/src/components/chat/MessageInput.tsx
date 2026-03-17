@@ -1,37 +1,16 @@
 import { useState, useRef, type KeyboardEvent } from "react";
+import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-
-const SendIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
-    />
-  </svg>
-);
-
-interface MessageInputProps {
+interface Props {
   recipientName: string;
   isSending: boolean;
   onSend: (content: string) => Promise<void>;
 }
 
-export default function MessageInput({
-  recipientName,
-  isSending,
-  onSend,
-}: MessageInputProps) {
+export default function MessageInput({ recipientName, isSending, onSend }: Props) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
   const canSend = value.trim().length > 0 && !isSending;
 
   async function handleSend() {
@@ -52,7 +31,6 @@ export default function MessageInput({
   return (
     <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shrink-0">
       <div className="flex items-center gap-2">
-        {/* Text input */}
         <input
           ref={inputRef}
           type="text"
@@ -61,6 +39,7 @@ export default function MessageInput({
           onKeyDown={handleKeyDown}
           placeholder={`Message ${recipientName}…`}
           disabled={isSending}
+          autoFocus
           className="
             flex-1 px-4 py-2.5 rounded-xl text-sm
             bg-neutral-100 dark:bg-neutral-800
@@ -72,8 +51,6 @@ export default function MessageInput({
             disabled:opacity-60 disabled:cursor-not-allowed
           "
         />
-
-        {/* Send button */}
         <Button
           onClick={handleSend}
           disabled={!canSend}
@@ -92,14 +69,12 @@ export default function MessageInput({
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           ) : (
-            <SendIcon />
+            <Send className="w-4 h-4" />
           )}
         </Button>
       </div>
-
-      {/* Hint */}
       <p className="mt-1.5 text-[10px] text-neutral-400 dark:text-neutral-600 pl-1">
-        Press <kbd className="font-mono">Enter</kbd> to send
+        Press <kbd className="font-mono bg-neutral-200 dark:bg-neutral-700 px-1 rounded text-[9px]">Enter</kbd> to send
       </p>
     </div>
   );

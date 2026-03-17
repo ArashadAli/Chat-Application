@@ -6,7 +6,7 @@ const sendUser = async (req: Request, res: Response) => {
 
     const { searchId } = req.params;
 
-    // console.log("userid :", searchId);
+    console.log("userid :", searchId);
 
     if (!searchId) {
         throw new ApiError(401, "userID not Found");

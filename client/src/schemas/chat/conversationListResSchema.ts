@@ -1,13 +1,12 @@
-
-
 export interface ConversationParticipant {
   _id: string;
   username: string;
   profilePic: string;
-  isOnline: boolean
+  isOnline: boolean;
 }
 
 export interface ConversationLastMessage {
+  _id: string;
   content: string;
   senderId: string;
   createdAt: string;
@@ -18,33 +17,21 @@ export interface Conversation {
   participants: ConversationParticipant[];
   lastMessage?: ConversationLastMessage;
   unreadCount: number;
+  updatedAt: string;
 }
 
 export type ConversationListResponse = Conversation[];
 
-export const conversationListResponseSchema = {
+export const conversationListResSchema = {
   validate(data: unknown): ConversationListResponse {
     if (!Array.isArray(data)) {
       throw new Error("Conversation list: expected an array");
     }
-
     for (const item of data) {
-      if (typeof item._id !== "string") {
-        throw new Error("Conversation item: missing _id");
-      }
-      if (!Array.isArray(item.participants)) {
-        throw new Error("Conversation item: missing participants array");
-      }
-      for (const p of item.participants) {
-        if (typeof p._id !== "string" || typeof p.username !== "string") {
-          throw new Error("Participant: missing _id or username");
-        }
-      }
-      if (typeof item.unreadCount !== "number") {
-        throw new Error("Conversation item: missing unreadCount");
-      }
+      if (typeof item._id !== "string") throw new Error("Conversation: missing _id");
+      if (!Array.isArray(item.participants)) throw new Error("Conversation: missing participants");
+      if (typeof item.unreadCount !== "number") throw new Error("Conversation: missing unreadCount");
     }
-
     return data as ConversationListResponse;
   },
 };

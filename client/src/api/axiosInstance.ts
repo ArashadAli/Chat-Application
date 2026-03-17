@@ -1,8 +1,10 @@
 import axios from "axios"
 import { toast } from "react-hot-toast"
 
+const baseAPIURL = import.meta.env.VITE_BACKEND_BASE_URL
+
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: baseAPIURL,
   withCredentials: true
 })
 

@@ -2,13 +2,25 @@ import { Response } from "express"
 import { AuthRequest } from "../types/authRequest"
 import ChatRequest from "../models/chatRequest.model"
 
- const sendChatRequest = async (req : AuthRequest, res : Response) => {
+import User from "../models/user.model"
+
+const sendChatRequest = async (req: AuthRequest, res: Response) => {
 
   const senderId = req.user?._id
-  const { receiverId } = req.body
+  const { phoneNo } = req.body
 
-  if(senderId?.toString() === receiverId){
-    return res.status(400).json({message:"Cannot send request to yourself"})
+  console.log("phoneNo from frontend : ", phoneNo)
+
+  const receiver = await User.findOne({ phoneNo })
+
+  if (!receiver) {
+    return res.status(404).json({ message: "User not found" })
+  }
+
+  const receiverId = receiver._id
+
+  if (senderId?.toString() === receiverId.toString()) {
+    return res.status(400).json({ message: "Cannot send request to yourself" })
   }
 
   const existing = await ChatRequest.findOne({
@@ -16,9 +28,9 @@ import ChatRequest from "../models/chatRequest.model"
     receiverId
   })
 
-  if(existing){
+  if (existing) {
     return res.status(400).json({
-      message:"Request already sent"
+      message: "Request already sent"
     })
   }
 

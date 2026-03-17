@@ -7,9 +7,12 @@ import { logger } from "../src/utils/logger"
 
 const server = http.createServer(app)
 
+
+// console.log("check origin : ",process.env.origin)
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.origin,
     credentials: true
   }
 })

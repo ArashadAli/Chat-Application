@@ -8,6 +8,11 @@ import Login from "../pages/auth/LoginPage";
 import Register from "../pages/auth/SignupPage";
 import Dashboard from "../pages/Dashboard/Dashboard";
 
+
+//-----Timer Folder------
+
+import Timer from "@/pages/timerFolder/Timer";
+
 // ── Protected Route ───────────────────────────────────────────────────────────
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +49,10 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
+
+      {/* Below route path is temp after testing the timer i have to remove this */}
+
+      <Route path="/timer" element={<Timer/>} />
 
       <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />

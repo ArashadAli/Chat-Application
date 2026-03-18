@@ -8,7 +8,7 @@ import { validate } from "../utils/validateResSchema";
 export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
+ 
   async function fetchConversations() {
     setIsLoading(true);
     try {
@@ -21,10 +21,10 @@ export function useConversations() {
       setIsLoading(false);
     }
   }
-
+ 
   useEffect(() => {
     fetchConversations();
   }, []);
-
+ 
   return { conversations, setConversations, isLoading, refetch: fetchConversations };
 }

@@ -8,6 +8,8 @@ const createGroupConversation = async (req: AuthRequest, res: Response) => {
   const adminId = req.user?._id
   const { groupName, participants } = req.body
 
+  console.log("group metadata : ", req.body)
+
   if (!participants || participants.length < 2) {
     return res.status(400).json({
       message: "Group must have at least 3 members including admin"

@@ -63,12 +63,12 @@ userRoute.get("/conversation/:conversationId", verifyJWT, sendConversationIdDeta
 userRoute.post("/conversation/individual", verifyJWT, createIndividualConversation)
 userRoute.post("/conversation/group", verifyJWT, createGroupConversation)
 
-userRoute.get("/:searchId", verifyJWT, sendUser)
-
 userRoute.post("/chat-request", verifyJWT, sendChatRequest)
 userRoute.get("/chat-request", verifyJWT, getPendingRequest)
 
 userRoute.post("/chat-request/accept", verifyJWT, acceptChatRequest)
+
+userRoute.get("/:searchId", verifyJWT, sendUser)
 
 
 export default userRoute

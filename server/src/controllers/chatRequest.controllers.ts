@@ -9,7 +9,7 @@ const sendChatRequest = async (req: AuthRequest, res: Response) => {
   const senderId = req.user?._id
   const { phoneNo } = req.body
 
-  console.log("phoneNo from frontend : ", phoneNo)
+  // console.log("phoneNo from frontend : ", phoneNo)
 
   const receiver = await User.findOne({ phoneNo })
 

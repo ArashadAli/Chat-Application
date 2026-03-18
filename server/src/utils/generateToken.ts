@@ -5,6 +5,9 @@ export const generateTokens = (userId: string ) => {
     const accessSecret = process.env.ACCESS_TOKEN_SECRET as string
     const refreshSecret = process.env.REFRESH_TOKEN_SECRET as string
 
+    // const accessExpiry = process.env.ACCESS_TOKEN_EXPIRY as string
+    // const refreshExpiry = process.env.REFRESH_TOKEN_EXPIRY as string
+
  
 
     if (!accessSecret || !refreshSecret) {
@@ -14,7 +17,7 @@ export const generateTokens = (userId: string ) => {
     const accessToken = jwt.sign(
         { userId },
         accessSecret,
-        { expiresIn: "15m"}
+        { expiresIn:"60m"}
     )
 
     const refreshToken = jwt.sign(

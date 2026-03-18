@@ -1,37 +1,73 @@
-import { useState } from "react"
-import { getChatRequestsWorker } from "../workers/chat/getChatRequest"
-import { acceptChatRequestWorker } from "../workers/chat/acceptChatRequest"
+import { useState, useCallback, useEffect } from "react";
+import toast from "react-hot-toast";
+import { getChatRequestsWorker } from "../workers/chat/getChatRequest";
+import { acceptChatRequestWorker } from "../workers/chat/acceptChatRequest";
+import { socket } from "../socket/socket";
+import type { ChatRequest } from "../workers/chat/getChatRequest";
 
-export default function useChatRequests(){
+export function useChatRequests(onConversationCreated?: () => void) {
+  const [requests, setRequests] = useState<ChatRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const [requests,setRequests] = useState<any[]>([])
-  const [open,setOpen] = useState(false)
+  const fetchRequests = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getChatRequestsWorker();
+      setRequests(data);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Failed to load requests");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const fetchRequests = async ()=>{
-    const data = await getChatRequestsWorker()
-    setRequests(data)
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  function openModal() {
+    setIsOpen(true);
+    fetchRequests();
   }
 
-  const openModal = async ()=>{
-    setOpen(true)
-    fetchRequests()
+  function closeModal() {
+    setIsOpen(false);
   }
 
-  const acceptRequest = async(id:string)=>{
-    await acceptChatRequestWorker(id)
-    setRequests(prev => prev.filter(r => r._id !== id))
+  async function acceptRequest(requestId: string) {
+    try {
+      const target = requests.find((r) => r._id === requestId)  // pehle find karo
+      const res = await acceptChatRequestWorker({ requestId })
+      toast.success("Conversation created")
+      setRequests((prev) => prev.filter((r) => r._id !== requestId))
+
+      // NEW — sender ko notify karo
+      if (target && res.conversation?._id) {
+        socket.emit("accept_chat_request", {
+          conversationId: res.conversation._id,
+          otherUserId: target.senderId._id,
+        })
+      }
+
+      onConversationCreated?.()
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Failed to accept request")
+    }
   }
 
-  const rejectRequest = (id:string)=>{
-    setRequests(prev => prev.filter(r => r._id !== id))
+  function rejectRequest(requestId: string) {
+    setRequests((prev) => prev.filter((r) => r._id !== requestId));
   }
 
   return {
-    open,
-    setOpen,
-    openModal,
     requests,
+    isLoading,
+    isOpen,
+    openModal,
+    closeModal,
     acceptRequest,
-    rejectRequest
-  }
+    rejectRequest,
+    fetchRequests,
+  };
 }

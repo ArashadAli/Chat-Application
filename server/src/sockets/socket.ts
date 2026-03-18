@@ -9,7 +9,7 @@ export default function registerSocketHandlers(io: Server) {
     // logger.info("connected userId : ", socket.id)
 
     chatSocket(io, socket)
-
+    
     socket.on("disconnect", () => {
       // logger.info("disConnected userId : ", socket.id)
       disconnectSocket(socket)

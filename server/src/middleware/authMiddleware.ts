@@ -17,7 +17,7 @@ const verifyJWT = asyncHandler(
       req.cookies?.accessToken ||
       req.header("Authorization")?.replace("Bearer ", "");
 
-      console.log("token : ", token)
+      // console.log("token : ", token)
 
     if (!token) {
       throw new ApiError(401, "Access Token Required");

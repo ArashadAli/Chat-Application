@@ -1,5 +1,3 @@
-// src/pages/auth/SignupPage.tsx
-
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { useSignup } from "../../hooks/useSignup";
@@ -97,7 +95,7 @@ export default function SignupPage() {
                 label="Phone Number"
                 type="tel"
                 autoComplete="tel"
-                placeholder="+1 (555) 000-0000"
+                placeholder="000****000"
                 icon={<PhoneIcon />}
                 registration={register("phoneNo", {
                   required: "Phone number is required.",

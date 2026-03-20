@@ -8,6 +8,8 @@ import acceptChatRequest from '../controllers/acceptChatRequest'
 import createIndividualConversation from '../controllers/chatIndividualy'
 import createGroupConversation from '../controllers/groupConversation'
 import sendConversationIdDetails from '../controllers/sendConversationIdDetails'
+import { upload } from '../middleware/multer.middleware'
+import { uploadFile, downloadFile } from '../controllers/fileControllers'
 
 const userRoute = express.Router()
 
@@ -62,6 +64,9 @@ userRoute.get("/conversation/:conversationId", verifyJWT, sendConversationIdDeta
 
 userRoute.post("/conversation/individual", verifyJWT, createIndividualConversation)
 userRoute.post("/conversation/group", verifyJWT, createGroupConversation)
+
+userRoute.post("/conversation/:conversationId/upload", verifyJWT, upload.single("file"), uploadFile)
+userRoute.get("/files/:filename", verifyJWT, downloadFile)
 
 userRoute.post("/chat-request", verifyJWT, sendChatRequest)
 userRoute.get("/chat-request", verifyJWT, getPendingRequest)

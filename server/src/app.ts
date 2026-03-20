@@ -1,13 +1,14 @@
+import dotenv from 'dotenv'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger";
 
 import authRouter from './routes/auth.routes'
 import userRoute from './routes/conversation.routes';
 import messageRoute from './routes/message.routes';
+import path from 'path';
 
 
 dotenv.config(
@@ -40,6 +41,9 @@ app.use(cors({
 }));
 app.use(express.json())
 app.use(cookieParser())
+
+
+app.use("/uploads", express.static(path.resolve("./uploads")))
 
 // swagger route
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

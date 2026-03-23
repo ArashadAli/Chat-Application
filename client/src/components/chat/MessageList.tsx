@@ -4,13 +4,13 @@ import MessageBubble from "./MessageBubble";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle } from "lucide-react";
 
-// ── date label ────────────────────────────────────────────────────────────────
+// ── Date separator ────────────────────────────────────────────────────────────
+
 function getDateLabel(iso: string): string {
   const date = new Date(iso);
   const now = new Date();
   const diffDays = Math.floor(
-    (new Date(now.toDateString()).getTime() - new Date(date.toDateString()).getTime()) /
-      86_400_000
+    (new Date(now.toDateString()).getTime() - new Date(date.toDateString()).getTime()) / 86_400_000
   );
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
@@ -31,14 +31,18 @@ function groupByDate(messages: Message[]) {
   }));
 }
 
-// ── props ─────────────────────────────────────────────────────────────────────
+// ── Props ─────────────────────────────────────────────────────────────────────
+
 interface Props {
   messages: Message[];
   isLoading: boolean;
+  onMessageUpdated: (updatedMessage: Message) => void;
+  onMessageDeleted: (messageId: string) => void;
 }
 
-// ── component ─────────────────────────────────────────────────────────────────
-export default function MessageList({ messages, isLoading }: Props) {
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function MessageList({ messages, isLoading, onMessageUpdated, onMessageDeleted }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,16 +86,16 @@ export default function MessageList({ messages, isLoading }: Props) {
               <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
             </div>
 
-            {/* Bubbles — showAvatar only on first message of each sender group */}
             {group.messages.map((msg, i) => {
               const prev = group.messages[i - 1];
-              const showAvatar =
-                !prev || prev.senderId._id !== msg.senderId._id;
+              const showAvatar = !prev || prev.senderId._id !== msg.senderId._id;
               return (
                 <MessageBubble
                   key={msg._id}
                   message={msg}
                   showAvatar={showAvatar}
+                  onMessageUpdated={onMessageUpdated}
+                  onMessageDeleted={onMessageDeleted}
                 />
               );
             })}

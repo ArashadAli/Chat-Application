@@ -2,13 +2,15 @@ import { Response } from "express";
 import path from "path";
 import mongoose from "mongoose";
 import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { s3Client, S3_BASE_URL } from "../config/s3.config";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { s3Client } from "../config/s3.config";
 import { AuthRequest } from "../types/authRequest";
 import Message from "../models/message.model";
 import Conversation from "../models/conversations.model";
 import asyncHandler from "../utils/asyncHandler";
 import ApiError from "../utils/ApiError";
-import { Readable } from "stream";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function generateFileName(originalName: string): string {
   const suffix = Date.now();
@@ -19,17 +21,78 @@ function generateFileName(originalName: string): string {
   return `${base}-${suffix}${ext}`;
 }
 
+const IMAGE_MIME_TYPES = [
+  "image/jpeg", "image/jpg", "image/pdf"
+];
 
 
-export const uploadFile = asyncHandler(
+export const getPresignedUploadUrl = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+
+    const fileName = String(req.query.fileName ?? "");
+    const mimeType = String(req.query.mimeType ?? "");
+    const conversationId = String(req.query.conversationId ?? "");
+
+    if (!fileName || !mimeType || !conversationId) {
+      throw new ApiError(400, "fileName, mimeType and conversationId are required");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      throw new ApiError(400, "Invalid conversationId");
+    }
+
+    // Verify user is participant
+    const conversation = await Conversation.findById(conversationId).select("participants");
+    if (!conversation) throw new ApiError(404, "Conversation not found");
+
+    const isParticipant = (conversation.participants as mongoose.Types.ObjectId[]).some(
+      (p) => p.toString() === req.user!._id.toString()
+    );
+    if (!isParticipant) throw new ApiError(403, "Not a participant");
+
+    const isImage = IMAGE_MIME_TYPES.includes(mimeType);
+    const folder = isImage ? "uploads/images" : "uploads/files";
+    const uniqueFileName = generateFileName(fileName);
+    const s3Key = `${folder}/${uniqueFileName}`;
+
+    // Generate presigned PUT URL — valid for 5 minutes
+    const command = new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: s3Key,
+      ContentType: mimeType,
+    });
+
+    const presignedUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 300, // 5 minutes
+    });
+
+    res.status(200).json({
+      presignedUrl,       // Frontend is URL pe PUT karega
+      s3Key,              // Frontend message save karne ke liye use karega
+      uniqueFileName,     // DB mein store hoga
+      messageType: isImage ? "image" : "file",
+    });
+  }
+);
+
+// ── POST /api/user/conversation/:conversationId/save-file-message ─────────────
+// File S3 pe upload hone ke BAAD frontend yeh call karta hai
+// Sirf DB mein message save karta hai
+export const saveFileMessage = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const conversationId = String(req.params.conversationId);
     const senderId = req.user?._id;
 
     if (!senderId) throw new ApiError(401, "Unauthorized");
-    if (!req.file) throw new ApiError(400, "No file uploaded");
     if (!mongoose.Types.ObjectId.isValid(conversationId)) {
-      throw new ApiError(400, "Invalid conversation id");
+      throw new ApiError(400, "Invalid conversationId");
+    }
+
+    const { originalName, uniqueFileName, mimeType, size, messageType, s3Key } = req.body;
+
+    if (!originalName || !uniqueFileName || !mimeType || !size || !messageType || !s3Key) {
+      throw new ApiError(400, "Missing file metadata");
     }
 
     const convObjectId = new mongoose.Types.ObjectId(conversationId);
@@ -44,30 +107,6 @@ export const uploadFile = asyncHandler(
     );
     if (!isParticipant) throw new ApiError(403, "Not a participant");
 
-    const { originalname, mimetype, size, buffer } = req.file;
-    const isImage = mimetype.startsWith("image/");
-    const folder = isImage ? "uploads/images" : "uploads/files";
-    const uniqueFileName = generateFileName(originalname);
-    const s3Key = `${folder}/${uniqueFileName}`;
-
-    try {
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: s3Key,
-          Body: buffer,
-          ContentType: mimetype,
-          ContentDisposition: `inline; filename="${originalname}"`,
-        })
-      );
-    } catch (err) {
-      console.error("S3 upload error:", err);
-      throw new ApiError(500, "Failed to upload file to S3");
-    }
-
-    const fileUrl = `${S3_BASE_URL}/${s3Key}`;
-    const messageType: "image" | "file" = isImage ? "image" : "file";
-
     const statusArray = participants.map((participantId) => ({
       userId: new mongoose.Types.ObjectId(participantId.toString()),
       state: "sent" as const,
@@ -76,21 +115,21 @@ export const uploadFile = asyncHandler(
     const newMessage = await Message.create({
       conversationId: convObjectId,
       senderId: senderObjectId,
-      content: originalname,
+      content: originalName,
       messageType,
       fileMetadata: {
-        originalName: originalname,
+        originalName,
         fileName: uniqueFileName,
-        mimeType: mimetype,
+        mimeType,
         size,
-        url: fileUrl,
+        url: s3Key,   // S3 key store karo (public URL nahi)
       },
       status: statusArray,
     });
 
     await Conversation.findByIdAndUpdate(convObjectId, {
       lastMessage: {
-        text: isImage ? "📷 Image" : `📎 ${originalname}`,
+        text: messageType === "image" ? "📷 Image" : `📎 ${originalName}`,
         senderId: senderObjectId,
         timestamp: new Date(),
       },
@@ -106,20 +145,13 @@ export const uploadFile = asyncHandler(
 );
 
 // ── GET /api/user/files/:filename ─────────────────────────────────────────────
-// Streams file from S3 through backend → frontend gets progress via Content-Length
-
-export const downloadFile = asyncHandler(
+// Presigned GET URL generate karta hai — frontend directly S3 se file fetch karega
+export const getPresignedDownloadUrl = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     if (!req.user) throw new ApiError(401, "Unauthorized");
 
     const filename = String(req.params.filename);
-    
-
     const safeFilename = path.basename(filename);
-
-    // console.log("safeFilename : ", safeFilename)
-
-    // Find message to get S3 key and metadata
 
     const message = await Message.findOne({
       "fileMetadata.fileName": safeFilename,
@@ -129,44 +161,21 @@ export const downloadFile = asyncHandler(
       throw new ApiError(404, "File not found");
     }
 
-    const { fileName, mimeType, originalName, size } = message.fileMetadata;
+    const { fileName, mimeType, url: s3Key } = message.fileMetadata;
 
-    // Determine folder from mimeType
+    // s3Key already stored as "uploads/images/filename.jpg"
+    const key = s3Key.startsWith("uploads/") ? s3Key : `uploads/${fileName}`;
 
-    const isImage = mimeType.startsWith("image/");
-    const s3Key = `${isImage ? "uploads/images" : "uploads/files"}/${fileName}`;
+    const command = new GetObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: key,
+    });
 
-    try {
-      const s3Response = await s3Client.send(
-        new GetObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: s3Key,
-        })
-      );
+    // Generate presigned GET URL — valid for 1 hour
+    const presignedUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 3600,
+    });
 
-      // Set headers so browser knows file size (enables progress tracking)
-      res.setHeader("Content-Type", mimeType);
-      res.setHeader("Content-Length", size);
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${originalName}"`
-      );
-
-      // Stream S3 body to response
-
-      const stream = s3Response.Body as Readable;
-      stream.pipe(res);
-
-      // console.log("stream : ", stream)
-
-      stream.on("error", () => {
-        if (!res.headersSent) {
-          res.status(500).json({ message: "Stream error" });
-        }
-      });
-    } catch (err) {
-      // console.error("S3 download error:", err);
-      throw new ApiError(500, "Failed to download file from S3");
-    }
+    res.status(200).json({ presignedUrl, mimeType });
   }
 );

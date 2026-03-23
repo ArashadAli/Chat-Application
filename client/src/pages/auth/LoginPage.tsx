@@ -88,7 +88,7 @@ export default function LoginPage() {
                 label="Phone Number"
                 type="tel"
                 autoComplete="tel"
-                placeholder="+1 (555) 000-0000"
+                placeholder="933*****00"
                 icon={<PhoneIcon />}
                 registration={register("phoneNo", {
                   required: "Phone number is required.",

@@ -57,7 +57,13 @@ export function chatSocket(io: Server, socket: Socket) {
     const populatedMessage = await Message.findById(newMessage._id)
       .populate("senderId", "username profilePic")
 
-    io.to(conversationId).emit("receive_message", populatedMessage)
+    // FIX: toObject() + conversationId.toString() — frontend string match ke liye
+    const emitPayload = {
+      ...populatedMessage?.toObject(),
+      conversationId: conversationId.toString(),
+    }
+
+    io.to(conversationId).emit("receive_message", emitPayload)
 
     const roomMembers = io.sockets.adapter.rooms.get(conversationId) ?? new Set()
     conversation.participants.forEach((participantId: any) => {
@@ -66,21 +72,19 @@ export function chatSocket(io: Server, socket: Socket) {
       const recipientSocketId = onlineUsers.get(uid)
       if (!recipientSocketId) return
       if (roomMembers.has(recipientSocketId)) return
-      io.to(recipientSocketId).emit("receive_message", populatedMessage)
+      io.to(recipientSocketId).emit("receive_message", emitPayload)
     })
 
     const senderSocketId = onlineUsers.get(senderId)
     if (senderSocketId) {
       io.to(senderSocketId).emit("message_status_update", {
         messageId: newMessage._id.toString(),
-        conversationId,
+        conversationId: conversationId.toString(),
         statuses: newMessage.status,
       })
     }
   })
 
-  // Notify other participants when a file is uploaded via REST API
-  
   socket.on("send_file_message", async (data: { conversationId: string; messageId: string }) => {
     const { conversationId, messageId } = data
     const senderId = socketToUser.get(socket.id)
@@ -93,10 +97,13 @@ export function chatSocket(io: Server, socket: Socket) {
       .populate("senderId", "username profilePic")
     if (!populatedMessage) return
 
-    // Emit to room
-    io.to(conversationId).emit("receive_message", populatedMessage)
+    const emitPayload = {
+      ...populatedMessage.toObject(),
+      conversationId: conversationId.toString(),
+    }
 
-    // Also emit directly to participants not in room
+    io.to(conversationId).emit("receive_message", emitPayload)
+
     const roomMembers = io.sockets.adapter.rooms.get(conversationId) ?? new Set()
     conversation.participants.forEach((participantId: any) => {
       const uid = participantId.toString()
@@ -104,7 +111,7 @@ export function chatSocket(io: Server, socket: Socket) {
       const recipientSocketId = onlineUsers.get(uid)
       if (!recipientSocketId) return
       if (roomMembers.has(recipientSocketId)) return
-      io.to(recipientSocketId).emit("receive_message", populatedMessage)
+      io.to(recipientSocketId).emit("receive_message", emitPayload)
     })
   })
 
@@ -128,7 +135,6 @@ export function chatSocket(io: Server, socket: Socket) {
       io.to(participantSocketId).emit("group_created", { conversationId: data.conversationId })
     }
   })
-
 }
 
 export async function disconnectSocket(socket: Socket) {

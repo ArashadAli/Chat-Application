@@ -1,9 +1,10 @@
-import { useState, type KeyboardEvent } from "react";
+import { useState, useEffect, type KeyboardEvent } from "react";
 import { LogOut, Search, MessageCircle, Bell, Loader2, Users } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useLogout } from "../../hooks/useLogout";
 import { useUserSearch } from "../../hooks/useUserSearch";
 import { useCreateGroup } from "../../hooks/useCreateGroup";
+import { useDebounce } from "../../hooks/useDebounce";
 import type { Conversation } from "../../schemas/chat/conversationListResSchema";
 import type { useChatRequests } from "../../hooks/useChatRequest";
 import ConversationItem from "./ConversationItem";
@@ -33,11 +34,10 @@ export default function Sidebar({
   chatRequests,
 }: SidebarProps) {
   const [inputValue, setInputValue] = useState("");
+
   const user = useAuthStore((s) => s.user);
   const { handleLogout } = useLogout();
-
   const { searchResult, isSearching, isSending, searchUser, sendRequest, clearResult } = useUserSearch();
-
   const { requests, isLoading: reqLoading, isOpen: modalOpen, openModal, closeModal, acceptRequest, rejectRequest } = chatRequests;
 
   const group = useCreateGroup({
@@ -45,21 +45,58 @@ export default function Sidebar({
     onGroupCreated: refetchConversations,
   });
 
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") { e.preventDefault(); clearResult(); searchUser(inputValue); }
-    if (e.key === "Backspace" && searchResult) clearResult();
-  }
-
+  // ── Debounce logic ────────────────────────────────────────────────────────
+  // Input digits only hai → phone number search mode
   const isPhoneSearch = /^\d+$/.test(inputValue.trim()) && inputValue.trim().length > 0;
 
+  // Debounced value — 1 second baad update hoga
+  const debouncedInput = useDebounce(inputValue.trim(), 1000);
+
+  // Jab debounced phone number change ho tab search karo
+  useEffect(() => {
+    // Sirf phone number mode mein aur value ho tab search karo
+    if (/^\d+$/.test(debouncedInput) && debouncedInput.length > 0) {
+      clearResult();
+      searchUser(debouncedInput);
+    } else if (!debouncedInput) {
+      // Input clear ho gaya → result bhi clear karo
+      clearResult();
+    }
+  }, [debouncedInput]);
+
+  // Input change handler
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setInputValue(val);
+
+    // Agar phone mode se text mode pe switch ho gaya to result clear karo
+    if (!/^\d+$/.test(val.trim())) {
+      clearResult();
+    }
+  }
+
+  // Enter — ab sirf conversation filter ke liye, phone search debounce se ho raha hai
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setInputValue("");
+      clearResult();
+    }
+  }
+
+  // ── Filter conversations ───────────────────────────────────────────────────
   const filtered = isPhoneSearch
-    ? conversations
+    ? conversations  // phone search mode mein conversations filter nahi hote
     : conversations.filter((c) => {
+        if (!inputValue.trim()) return true; // empty → sab dikhao
         if (c.isGroup) {
-          return c.groupMetadata?.groupName?.toLowerCase().includes(inputValue.toLowerCase());
+          return c.groupMetadata?.groupName
+            ?.toLowerCase()
+            .includes(inputValue.toLowerCase());
         }
         return c.participants.some(
-          (p) => p._id !== user?._id && p.username.toLowerCase().includes(inputValue.toLowerCase())
+          (p) =>
+            p._id !== user?._id &&
+            p.username.toLowerCase().includes(inputValue.toLowerCase())
         );
       });
 
@@ -74,11 +111,12 @@ export default function Sidebar({
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500 to-teal-400 flex items-center justify-center shadow-md shadow-sky-500/20">
                 <MessageCircle className="w-4 h-4 text-white" />
               </div>
-              <span className="text-[15px] font-bold tracking-tight text-neutral-900 dark:text-white">Messages</span>
+              <span className="text-[15px] font-bold tracking-tight text-neutral-900 dark:text-white">
+                Messages
+              </span>
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Create group */}
               <button
                 onClick={group.openModal}
                 title="Create group"
@@ -87,7 +125,6 @@ export default function Sidebar({
                 <Users className="w-4 h-4" />
               </button>
 
-              {/* Bell */}
               <button
                 onClick={openModal}
                 title="Chat requests"
@@ -101,7 +138,6 @@ export default function Sidebar({
                 )}
               </button>
 
-              {/* Logout */}
               <button
                 onClick={handleLogout}
                 title="Logout"
@@ -112,33 +148,71 @@ export default function Sidebar({
             </div>
           </div>
 
+          {/* Search input */}
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
-              {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              {isSearching
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                : <Search className="w-3.5 h-3.5" />
+              }
             </span>
             <Input
               type="text"
-              placeholder="Search by name or phone (Enter)…"
+              placeholder="Search by name or type phone number…"
               value={inputValue}
-              onChange={(e) => { setInputValue(e.target.value); if (!e.target.value) clearResult(); }}
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               className="pl-8 h-9 rounded-xl text-sm bg-neutral-100 dark:bg-neutral-800 border-transparent focus-visible:ring-1 focus-visible:ring-sky-400/40 focus-visible:border-sky-400/40 placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
             />
+
+            {/* Searching indicator — debounce wait ho raha hai */}
+            {isPhoneSearch && !isSearching && !searchResult && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                <span className="flex gap-0.5">
+                  <span className="w-1 h-1 rounded-full bg-sky-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1 h-1 rounded-full bg-sky-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1 h-1 rounded-full bg-sky-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </span>
+              </span>
+            )}
           </div>
 
+          {/* Search result card */}
           {searchResult && (
-            <SearchUserCard user={searchResult} isSending={isSending} onConnect={sendRequest} onDismiss={clearResult} />
+            <SearchUserCard
+              user={searchResult}
+              isSending={isSending}
+              onConnect={sendRequest}
+              onDismiss={() => {
+                clearResult();
+                setInputValue("");
+              }}
+            />
+          )}
+
+          {/* Phone mode hint */}
+          {isPhoneSearch && !searchResult && !isSearching && (
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-600 mt-1.5 pl-1">
+              Searching for user with this number…
+            </p>
           )}
         </div>
 
+        {/* Current user pill */}
         {user && (
           <div className="mx-3 mt-3 mb-1 px-3 py-2 rounded-xl bg-gradient-to-r from-sky-50 to-teal-50 dark:from-sky-950/40 dark:to-teal-950/30 border border-sky-100 dark:border-sky-900/40 flex items-center gap-2.5 shrink-0">
             <Avatar className="w-7 h-7 shrink-0">
-              <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-sky-400 to-teal-400 text-white">{userInitials}</AvatarFallback>
+              <AvatarFallback className="text-[10px] font-bold bg-gradient-to-br from-sky-400 to-teal-400 text-white">
+                {userInitials}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate leading-none mb-0.5">{user.username}</p>
-              <p className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate leading-none">{user.phoneNo}</p>
+              <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate leading-none mb-0.5">
+                {user.username}
+              </p>
+              <p className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate leading-none">
+                {user.phoneNo}
+              </p>
             </div>
             <span className="flex items-center gap-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -148,9 +222,15 @@ export default function Sidebar({
         )}
 
         <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-600 shrink-0">
-          {inputValue && !isPhoneSearch ? `Results for "${inputValue}"` : "All conversations"}
+          {isPhoneSearch
+            ? "Searching by phone"
+            : inputValue.trim()
+            ? `Results for "${inputValue}"`
+            : "All conversations"
+          }
         </p>
 
+        {/* Conversation list */}
         <ScrollArea className="flex-1 px-2 pb-2">
           {isConvLoading ? (
             <div className="flex items-center justify-center h-28">
@@ -163,7 +243,10 @@ export default function Sidebar({
             <div className="flex flex-col items-center justify-center h-28 gap-2 pt-4">
               <MessageCircle className="w-7 h-7 text-neutral-300 dark:text-neutral-700" />
               <p className="text-xs text-neutral-400 dark:text-neutral-600 text-center">
-                {inputValue && !isPhoneSearch ? "No conversations found" : "No conversations yet"}
+                {inputValue.trim() && !isPhoneSearch
+                  ? "No conversations found"
+                  : "No conversations yet"
+                }
               </p>
             </div>
           ) : (

@@ -10,7 +10,7 @@ const server = http.createServer(app)
 
 // console.log("check origin : ",process.env.origin)
 
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: {
     origin: process.env.origin,
     credentials: true

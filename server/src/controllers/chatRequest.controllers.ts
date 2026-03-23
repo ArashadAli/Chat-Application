@@ -13,6 +13,8 @@ const sendChatRequest = async (req: AuthRequest, res: Response) => {
 
   const receiver = await User.findOne({ phoneNo })
 
+  console.log("receiver data : ", receiver)
+
   if (!receiver) {
     return res.status(404).json({ message: "User not found" })
   }
@@ -23,12 +25,14 @@ const sendChatRequest = async (req: AuthRequest, res: Response) => {
     return res.status(400).json({ message: "Cannot send request to yourself" })
   }
 
-  const existing = await ChatRequest.findOne({
-    senderId,
-    receiverId
+  const existingRequest = await ChatRequest.findOne({
+    $or: [
+      { senderId, receiverId },
+      { senderId: receiverId, receiverId: senderId }
+    ]
   })
 
-  if (existing) {
+  if (existingRequest) {
     return res.status(400).json({
       message: "Request already sent"
     })

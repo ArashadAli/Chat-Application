@@ -13,7 +13,7 @@ const getPendingRequest = async (req : AuthRequest, res : Response) => {
     status:"pending"
   }).populate("senderId","username profilePic")
 
-  console.log("geting pending request : ", requests)
+  // console.log("geting pending request : ", requests)
 
   res.json(requests)
 }

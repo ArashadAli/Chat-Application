@@ -26,6 +26,7 @@ export interface Message {
   senderId: MessageSender;
   content: string;
   messageType: MessageType;
+  isActive: boolean;
   fileMetadata?: FileMetadata;
   status: MessageStatus[];
   createdAt: string;

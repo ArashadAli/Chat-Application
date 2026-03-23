@@ -5,7 +5,7 @@ import { useSocketConnection } from "../../hooks/useSocketConnection";
 import { useConversations } from "../../hooks/useConversation";
 import { useChatRequests } from "../../hooks/useChatRequest";
 import type { Conversation } from "../../schemas/chat/conversationListResSchema";
-// import type { Message } from "../../schemas/chat/conversationDetailSchema";
+import type { Message } from "../../schemas/chat/conversationDetailSchema";
 import Sidebar from "../../components/chat/Sidebar";
 import ChatArea from "../../components/chat/ChatArea";
 
@@ -20,9 +20,7 @@ function EmptyState() {
         <MessageCircle className="w-7 h-7 text-neutral-300 dark:text-neutral-700" />
       </div>
       <div className="text-center">
-        <p className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 mb-1">
-          Select a conversation
-        </p>
+        <p className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 mb-1">Select a conversation</p>
         <p className="text-xs text-neutral-400 dark:text-neutral-600 max-w-[200px] leading-relaxed">
           Pick someone from the sidebar to start messaging.
         </p>
@@ -37,7 +35,6 @@ export default function DashboardPage() {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const chatRequests = useChatRequests(refetchConversations);
 
-  // Restore last active conversation after refresh
   useEffect(() => {
     if (conversations.length === 0) return;
     const savedId = localStorage.getItem(ACTIVE_CONV_KEY);
@@ -51,31 +48,37 @@ export default function DashboardPage() {
     localStorage.setItem(ACTIVE_CONV_KEY, conv._id);
     appendRef.current = null;
     statusUpdateRef.current = null;
+    msgUpdatedRef.current = null;
+    msgDeletedRef.current = null;
     setActiveConversation(conv);
-    setConversations((prev) => prev.map((c) => (c._id === conv._id ? { ...c, unreadCount: 0 } : c)));
+    setConversations((prev) =>
+      prev.map((c) => (c._id === conv._id ? { ...c, unreadCount: 0 } : c))
+    );
   }
 
   function handleBack() {
     localStorage.removeItem(ACTIVE_CONV_KEY);
     appendRef.current = null;
     statusUpdateRef.current = null;
+    msgUpdatedRef.current = null;
+    msgDeletedRef.current = null;
     setActiveConversation(null);
   }
 
-  // Refs for ChatArea callbacks
   const appendRef = useRef<((msg: any) => void) | null>(null);
   const statusUpdateRef = useRef<((data: any) => void) | null>(null);
+  const msgUpdatedRef = useRef<((data: any) => void) | null>(null);
+  const msgDeletedRef = useRef<((data: any) => void) | null>(null);
   const activeConversationRef = useRef<Conversation | null>(null);
   activeConversationRef.current = activeConversation;
 
+  // ── New message ───────────────────────────────────────────────────────────
   const handleReceiveMessage = useCallback(
     (message: any) => {
       appendRef.current?.(message);
-
       setConversations((prev) => {
         const exists = prev.find((c) => c._id === message.conversationId);
         if (!exists) { refetchConversations(); return prev; }
-
         const updated = prev.map((c) => {
           if (c._id !== message.conversationId) return c;
           const isOpen = activeConversationRef.current?._id === message.conversationId;
@@ -94,7 +97,6 @@ export default function DashboardPage() {
             unreadCount: isOpen ? 0 : c.unreadCount + 1,
           };
         });
-
         const targetIndex = updated.findIndex((c) => c._id === message.conversationId);
         if (targetIndex > 0) {
           const [target] = updated.splice(targetIndex, 1);
@@ -104,6 +106,79 @@ export default function DashboardPage() {
       });
     },
     [setConversations, refetchConversations]
+  );
+
+  // ── Socket: message_updated (dusre user ke liye real time) ───────────────
+  const handleSocketMessageUpdated = useCallback(
+    (data: { messageId: string; conversationId: string; content: string; updatedMessage: any }) => {
+      msgUpdatedRef.current?.(data);
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c._id !== data.conversationId) return c;
+          if (c.lastMessage?._id === data.messageId) {
+            return { ...c, lastMessage: { ...c.lastMessage, content: data.content } };
+          }
+          return c;
+        })
+      );
+    },
+    [setConversations]
+  );
+
+  // ── Socket: message_deleted (dusre user ke liye real time) ───────────────
+  const handleSocketMessageDeleted = useCallback(
+    (data: { messageId: string; conversationId: string; newLastMessage: any }) => {
+      msgDeletedRef.current?.(data);
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c._id !== data.conversationId) return c;
+          return {
+            ...c,
+            lastMessage: data.newLastMessage
+              ? {
+                  _id: data.newLastMessage._id,
+                  content: data.newLastMessage.content,
+                  senderId: data.newLastMessage.senderId,
+                  createdAt: data.newLastMessage.createdAt,
+                }
+              : undefined,
+          };
+        })
+      );
+    },
+    [setConversations]
+  );
+
+  // ── Same user: own message deleted — sidebar update ───────────────────────
+  const handleOwnMessageDeleted = useCallback(
+    (messageId: string, conversationId: string) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c._id !== conversationId) return c;
+          if (c.lastMessage?._id === messageId) {
+            return { ...c, lastMessage: undefined };
+          }
+          return c;
+        })
+      );
+    },
+    [setConversations]
+  );
+
+  // ── Same user: own message updated — sidebar update ───────────────────────
+  const handleOwnMessageUpdated = useCallback(
+    (updatedMessage: Message) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c._id !== updatedMessage.conversationId) return c;
+          if (c.lastMessage?._id === updatedMessage._id) {
+            return { ...c, lastMessage: { ...c.lastMessage, content: updatedMessage.content } };
+          }
+          return c;
+        })
+      );
+    },
+    [setConversations]
   );
 
   const handleUserStatusChanged = useCallback(
@@ -122,21 +197,10 @@ export default function DashboardPage() {
     [setConversations]
   );
 
-  const handleNewChatRequest = useCallback(() => {
-    chatRequests.fetchRequests();
-  }, [chatRequests.fetchRequests]);
-
-  const handleConversationCreated = useCallback(() => {
-    refetchConversations();
-  }, [refetchConversations]);
-
-  const handleMessageStatusUpdate = useCallback((data: any) => {
-    statusUpdateRef.current?.(data);
-  }, []);
-
-  const handleGroupCreated = useCallback(() => {
-    refetchConversations();
-  }, [refetchConversations]);
+  const handleNewChatRequest = useCallback(() => { chatRequests.fetchRequests(); }, [chatRequests.fetchRequests]);
+  const handleConversationCreated = useCallback(() => { refetchConversations(); }, [refetchConversations]);
+  const handleMessageStatusUpdate = useCallback((data: any) => { statusUpdateRef.current?.(data); }, []);
+  const handleGroupCreated = useCallback(() => { refetchConversations(); }, [refetchConversations]);
 
   useSocketConnection({
     userId: user?._id,
@@ -146,10 +210,14 @@ export default function DashboardPage() {
     onConversationCreated: handleConversationCreated,
     onMessageStatusUpdate: handleMessageStatusUpdate,
     onGroupCreated: handleGroupCreated,
+    onMessageUpdated: handleSocketMessageUpdated,
+    onMessageDeleted: handleSocketMessageDeleted,
   });
 
   const registerAppend = useCallback((fn: (msg: any) => void) => { appendRef.current = fn; }, []);
   const registerStatusUpdate = useCallback((fn: (data: any) => void) => { statusUpdateRef.current = fn; }, []);
+  const registerMsgUpdated = useCallback((fn: (data: any) => void) => { msgUpdatedRef.current = fn; }, []);
+  const registerMsgDeleted = useCallback((fn: (data: any) => void) => { msgDeletedRef.current = fn; }, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white dark:bg-neutral-900">
@@ -173,6 +241,10 @@ export default function DashboardPage() {
             onBack={handleBack}
             registerAppend={registerAppend}
             registerStatusUpdate={registerStatusUpdate}
+            registerMsgUpdated={registerMsgUpdated}
+            registerMsgDeleted={registerMsgDeleted}
+            onMessageDeleted={handleOwnMessageDeleted}
+            onMessageUpdated={handleOwnMessageUpdated}
           />
         ) : (
           <EmptyState />

@@ -4,6 +4,7 @@ export interface IMessage extends Document {
   conversationId: mongoose.Types.ObjectId;
   senderId: mongoose.Types.ObjectId;
   content: string;
+  isActive:boolean,
   messageType: "text" | "file" | "image";
   fileMetadata?: {
     originalName: string;
@@ -39,6 +40,10 @@ const messageSchema = new Schema<IMessage>(
       type: String,
       enum: ["text", "file", "image"],
       default: "text",
+    },
+    isActive: {
+      type: Boolean,
+      default: true
     },
     fileMetadata: {
       originalName: String,

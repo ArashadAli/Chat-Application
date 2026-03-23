@@ -13,6 +13,24 @@ interface StatusUpdate {
   statuses: any[];
 }
 
+interface MessageUpdatedData {
+  messageId: string;
+  conversationId: string;
+  content: string;
+  updatedMessage: any;
+}
+
+interface MessageDeletedData {
+  messageId: string;
+  conversationId: string;
+  newLastMessage: {
+    _id: string;
+    content: string;
+    senderId: string;
+    createdAt: string;
+  } | null;
+}
+
 interface Options {
   userId: string | undefined;
   onReceiveMessage: (message: Message) => void;
@@ -21,6 +39,8 @@ interface Options {
   onConversationCreated?: () => void;
   onMessageStatusUpdate?: (data: StatusUpdate) => void;
   onGroupCreated?: () => void;
+  onMessageUpdated?: (data: MessageUpdatedData) => void;
+  onMessageDeleted?: (data: MessageDeletedData) => void;
 }
 
 export function useSocketConnection({
@@ -31,6 +51,8 @@ export function useSocketConnection({
   onConversationCreated,
   onMessageStatusUpdate,
   onGroupCreated,
+  onMessageUpdated,
+  onMessageDeleted,
 }: Options) {
   const messageRef = useRef(onReceiveMessage);
   messageRef.current = onReceiveMessage;
@@ -50,30 +72,26 @@ export function useSocketConnection({
   const groupCreatedRef = useRef(onGroupCreated);
   groupCreatedRef.current = onGroupCreated;
 
+  const msgUpdatedRef = useRef(onMessageUpdated);
+  msgUpdatedRef.current = onMessageUpdated;
+
+  const msgDeletedRef = useRef(onMessageDeleted);
+  msgDeletedRef.current = onMessageDeleted;
+
   useEffect(() => {
     if (!userId) return;
 
     if (!socket.connected) socket.connect();
     socket.emit("user_connected", userId);
 
-    function handleMessage(message: Message) {
-      messageRef.current(message);
-    }
-    function handleStatusChange(change: StatusChange) {
-      statusRef.current?.(change);
-    }
-    function handleNewChatRequest() {
-      chatRequestRef.current?.();
-    }
-    function handleConversationCreated() {
-      convCreatedRef.current?.();
-    }
-    function handleMessageStatusUpdate(data: StatusUpdate) {
-      statusUpdateRef.current?.(data);
-    }
-    function handleGroupCreated() {
-      groupCreatedRef.current?.();
-    }
+    function handleMessage(message: Message) { messageRef.current(message); }
+    function handleStatusChange(change: StatusChange) { statusRef.current?.(change); }
+    function handleNewChatRequest() { chatRequestRef.current?.(); }
+    function handleConversationCreated() { convCreatedRef.current?.(); }
+    function handleMessageStatusUpdate(data: StatusUpdate) { statusUpdateRef.current?.(data); }
+    function handleGroupCreated() { groupCreatedRef.current?.(); }
+    function handleMessageUpdated(data: MessageUpdatedData) { msgUpdatedRef.current?.(data); }
+    function handleMessageDeleted(data: MessageDeletedData) { msgDeletedRef.current?.(data); }
 
     socket.on("receive_message", handleMessage);
     socket.on("user_status_changed", handleStatusChange);
@@ -81,6 +99,8 @@ export function useSocketConnection({
     socket.on("conversation_created", handleConversationCreated);
     socket.on("message_status_update", handleMessageStatusUpdate);
     socket.on("group_created", handleGroupCreated);
+    socket.on("message_updated", handleMessageUpdated);
+    socket.on("message_deleted", handleMessageDeleted);
 
     return () => {
       socket.off("receive_message", handleMessage);
@@ -89,6 +109,8 @@ export function useSocketConnection({
       socket.off("conversation_created", handleConversationCreated);
       socket.off("message_status_update", handleMessageStatusUpdate);
       socket.off("group_created", handleGroupCreated);
+      socket.off("message_updated", handleMessageUpdated);
+      socket.off("message_deleted", handleMessageDeleted);
     };
   }, [userId]);
 }

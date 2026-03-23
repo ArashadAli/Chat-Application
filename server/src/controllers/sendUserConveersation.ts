@@ -22,7 +22,8 @@ const sendUserConversation = asyncHandler(async (req: AuthRequest, res: Response
     conversations.map(async (conv) => {
 
       const lastMessage = await Message.findOne({
-        conversationId: conv._id
+            conversationId: conv._id,
+            isActive:true
       }).sort({ createdAt: -1 })
 
       const unreadCount = await Message.countDocuments({

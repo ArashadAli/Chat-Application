@@ -13,9 +13,22 @@ interface Props {
   onBack: () => void;
   registerAppend: (fn: (msg: any) => void) => void;
   registerStatusUpdate: (fn: (data: any) => void) => void;
+  registerMsgUpdated: (fn: (data: any) => void) => void;
+  registerMsgDeleted: (fn: (data: any) => void) => void;
+  onMessageDeleted: (messageId: string, conversationId: string) => void;
+  onMessageUpdated: (updatedMessage: Message) => void;
 }
 
-export default function ChatArea({ conversation, onBack, registerAppend, registerStatusUpdate }: Props) {
+export default function ChatArea({
+  conversation,
+  onBack,
+  registerAppend,
+  registerStatusUpdate,
+  registerMsgUpdated,
+  registerMsgDeleted,
+  onMessageDeleted,
+  onMessageUpdated,
+}: Props) {
   const myId = useAuthStore((s) => s.user?._id ?? "");
   const { messages: history, isLoading } = useConversationDetails(conversation._id);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,17 +60,13 @@ export default function ChatArea({ conversation, onBack, registerAppend, registe
       if (msg.conversationId !== conversation._id) return;
       const normalized = normalizeSender(msg);
       setMessages((prev) => {
-        // Deduplicate by _id
         if (prev.some((m) => m._id === normalized._id)) return prev;
         return [...prev, normalized];
       });
     },
     [conversation._id, normalizeSender]
   );
-
-  useEffect(() => {
-    registerAppend(appendMessage);
-  }, [registerAppend, appendMessage]);
+  useEffect(() => { registerAppend(appendMessage); }, [registerAppend, appendMessage]);
 
   const updateMessageStatus = useCallback(
     (data: { messageId: string; conversationId: string; statuses: any[] }) => {
@@ -68,10 +77,51 @@ export default function ChatArea({ conversation, onBack, registerAppend, registe
     },
     [conversation._id]
   );
+  useEffect(() => { registerStatusUpdate(updateMessageStatus); }, [registerStatusUpdate, updateMessageStatus]);
 
-  useEffect(() => {
-    registerStatusUpdate(updateMessageStatus);
-  }, [registerStatusUpdate, updateMessageStatus]);
+  // Socket: dusre user ne message update kiya
+  const handleSocketMsgUpdated = useCallback(
+    (data: { messageId: string; conversationId: string; content: string; updatedMessage: any }) => {
+      if (data.conversationId !== conversation._id) return;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id !== data.messageId ? msg : { ...msg, content: data.updatedMessage?.content ?? data.content }
+        )
+      );
+    },
+    [conversation._id]
+  );
+  useEffect(() => { registerMsgUpdated(handleSocketMsgUpdated); }, [registerMsgUpdated, handleSocketMsgUpdated]);
+
+  // Socket: dusre user ne message delete kiya
+  const handleSocketMsgDeleted = useCallback(
+    (data: { messageId: string; conversationId: string }) => {
+      if (data.conversationId !== conversation._id) return;
+      setMessages((prev) => prev.filter((msg) => msg._id !== data.messageId));
+    },
+    [conversation._id]
+  );
+  useEffect(() => { registerMsgDeleted(handleSocketMsgDeleted); }, [registerMsgDeleted, handleSocketMsgDeleted]);
+
+  // Apna message delete
+  const handleMessageDeleted = useCallback(
+    (messageId: string) => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+      onMessageDeleted(messageId, conversation._id);
+    },
+    [conversation._id, onMessageDeleted]
+  );
+
+  // Apna message update
+  const handleMessageUpdated = useCallback(
+    (updatedMessage: Message) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg._id === updatedMessage._id ? updatedMessage : msg))
+      );
+      onMessageUpdated(updatedMessage);
+    },
+    [onMessageUpdated]
+  );
 
   async function handleSend(content: string) {
     if (!content.trim() || !myId) return;
@@ -87,15 +137,12 @@ export default function ChatArea({ conversation, onBack, registerAppend, registe
     }
   }
 
-  // Called after a file is successfully uploaded — add to message list immediately
   function handleFileSent(serverMessage: any) {
     const normalized = normalizeSender(serverMessage);
     setMessages((prev) => {
       if (prev.some((m) => m._id === normalized._id)) return prev;
       return [...prev, normalized];
     });
-
-    // Also notify other participants via socket that a new file message exists
     socket.emit("send_file_message", {
       conversationId: conversation._id,
       messageId: serverMessage._id,
@@ -113,7 +160,12 @@ export default function ChatArea({ conversation, onBack, registerAppend, registe
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-neutral-50 dark:bg-neutral-950">
       <ChatHeader conversation={conversation} onBack={onBack} />
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList
+        messages={messages}
+        isLoading={isLoading}
+        onMessageUpdated={handleMessageUpdated}
+        onMessageDeleted={handleMessageDeleted}
+      />
       <MessageInput
         recipientName={displayName}
         conversationId={conversation._id}

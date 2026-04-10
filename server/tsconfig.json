@@ -1,11 +1,12 @@
 {
  "compilerOptions": {
-  "target": "ES6",
   "module": "commonjs",
   "rootDir": "./src",
   "outDir": "./dist",
   "esModuleInterop": true,
   "strict": true,
+  "target": "ES2016", 
+  "lib": ["ES2016", "DOM"],
  },
   "include": ["src", "src/utils/logger.ts"]
 }

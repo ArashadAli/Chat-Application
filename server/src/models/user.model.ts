@@ -1,13 +1,14 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   phoneNo: string;
   username: string;
   password: string;
   profilePic?: string;
   isOnline: boolean;
   lastSeen?: Date;
-  refreshToken?: string
+  refreshToken?: string;
 }
 
 const userSchema = new Schema<IUser>(

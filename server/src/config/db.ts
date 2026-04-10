@@ -1,24 +1,26 @@
 import mongoose from "mongoose";
 
-const dbConnection = async (): Promise<void> => {
-  try {
+const dbConnection = async () => {
+    // Check if URI exists to avoid cryptic errors
     const uri = process.env.MONGODB_URI;
-
+    
     if (!uri) {
-      throw new Error("MONGODB_URI is not defined in environment variables");
+        console.error("❌ MONGODB_URI is not defined in environment variables");
+        process.exit(1);
     }
 
-    await mongoose.connect(uri);
-
-    console.log("Database connected successfully");
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error("Database connection failed:", error.message);
-    } else {
-      console.error("Unknown database error:", error);
+    try {
+        // Pass the DB name as an option instead of string math
+        await mongoose.connect(uri, {
+            dbName: "chat-application",
+        });
+        
+        console.log("✅ Database connected successfully");
+    } catch (error) {
+        console.error("❌ DB Connection Error:", error);
+        // In production, you might want to notify an error tracking service here
+        process.exit(1); 
     }
-    process.exit(1);
-  }
 };
 
 export default dbConnection;

@@ -1,9 +1,9 @@
 import { Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/ApiError";
-import User from "../models/user.model";
-import { AuthRequest } from "../types/authRequest";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+import User from "../models/user.model.js";
+import { AuthRequest } from "../types/authRequest.js";
 
 interface DecodedToken extends JwtPayload {
   userId: string;

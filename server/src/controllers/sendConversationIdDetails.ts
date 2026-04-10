@@ -1,10 +1,10 @@
 import { Response } from "express";
 import mongoose from "mongoose";
-import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/ApiError";
-import Message from "../models/message.model";
-import Conversation from "../models/conversations.model";
-import { AuthRequest } from "../types/authRequest";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+import Message from "../models/message.model.js";
+import Conversation from "../models/conversations.model.js";
+import { AuthRequest } from "../types/authRequest.js";
 
 const sendConversationIdDetails = asyncHandler(
   async (req: AuthRequest, res: Response) => {

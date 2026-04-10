@@ -1,9 +1,9 @@
 import app from "./app"
 import http from "http"
 import { Server } from "socket.io"
-import dbConnection from "./config/db"
-import registerSocketHandlers from "./sockets/socket"
-import { logger } from "../src/utils/logger"
+import dbConnection from "./config/db.js"
+import registerSocketHandlers from "./sockets/socket.js"
+import { logger } from "../src/utils/logger.js"
 
 const server = http.createServer(app)
 

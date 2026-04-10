@@ -1,9 +1,9 @@
-import { AuthRequest } from "../types/authRequest";
-import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/ApiError";
+import { AuthRequest } from "../types/authRequest.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
 import { Response } from "express";
-import Conversation from "../models/conversations.model"
-import Message from "../models/message.model";
+import Conversation from "../models/conversations.model.js"
+import Message from "../models/message.model.js";
 
 
 const sendUserConversation = asyncHandler(async (req: AuthRequest, res: Response) => {

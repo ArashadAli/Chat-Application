@@ -1,7 +1,7 @@
 import { Response } from "express"
-import { AuthRequest } from "../types/authRequest"
-import Conversation from "../models/conversations.model"
-import ChatRequest from "../models/chatRequest.model"
+import { AuthRequest } from "../types/authRequest.js"
+import Conversation from "../models/conversations.model.js"
+import ChatRequest from "../models/chatRequest.model.js"
 
 const createGroupConversation = async (req: AuthRequest, res: Response) => {
 

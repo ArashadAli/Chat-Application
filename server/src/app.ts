@@ -3,11 +3,11 @@ import express from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./config/swagger";
+import swaggerSpec from "./config/swagger.js";
 
-import authRouter from './routes/auth.routes'
-import userRoute from './routes/conversation.routes';
-import messageRoute from './routes/message.routes';
+import authRouter from './routes/auth.routes.js'
+import userRoute from './routes/conversation.routes.js';
+import messageRoute from './routes/message.routes.js';
 import path from 'path';
 
 

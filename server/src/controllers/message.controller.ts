@@ -1,11 +1,11 @@
 import { Response } from "express";
 import mongoose from "mongoose";
-import { AuthRequest } from "../types/authRequest";
-import Message from "../models/message.model";
-import Conversation from "../models/conversations.model";
-import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/ApiError";
-import { io } from "../server";
+import { AuthRequest } from "../types/authRequest.js";
+import Message from "../models/message.model.js";
+import Conversation from "../models/conversations.model.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+import { io } from "../server.js";
 
 export const updateMsg = asyncHandler(async (req: AuthRequest, res: Response) => {
   const msgId = String(req.params.msgId);

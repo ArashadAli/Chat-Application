@@ -1,7 +1,7 @@
 import { Response } from "express"
-import { AuthRequest } from "../types/authRequest"
-import Message from "../models/message.model"
-import Conversation from "../models/conversations.model"
+import { AuthRequest } from "../types/authRequest.js"
+import Message from "../models/message.model.js"
+import Conversation from "../models/conversations.model.js"
 
 const sendMessage = async (req : AuthRequest , res : Response)=>{
 

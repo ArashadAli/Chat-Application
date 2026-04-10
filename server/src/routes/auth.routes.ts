@@ -1,9 +1,9 @@
 import express from "express";
-import authControllers from "../controllers/authControllers";
-import { signupSchema, loginSchema } from "../schemas/auth.schema";
-import validateSchema from "../middleware/validateSchema"
-import verifyJWT from "../middleware/authMiddleware";
-import { AuthRequest } from "../types/authRequest";
+import authControllers from "../controllers/authControllers.js";
+import { signupSchema, loginSchema } from "../schemas/auth.schema.js";
+import validateSchema from "../middleware/validateSchema.js"
+import verifyJWT from "../middleware/authMiddleware.js";
+import { AuthRequest } from "../types/authRequest.js";
 import { Response } from "express";
 
 const router = express.Router()

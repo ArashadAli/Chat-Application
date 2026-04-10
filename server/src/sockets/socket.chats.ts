@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io"
-import Message from "../models/message.model"
-import Conversation from "../models/conversations.model"
-import User from "../models/user.model"
+import Message from "../models/message.model.js"
+import Conversation from "../models/conversations.model.js"
+import User from "../models/user.model.js"
 
 const onlineUsers = new Map<string, string>()
 const socketToUser = new Map<string, string>()

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import User from "../models/user.model";
-import ApiError from "../utils/ApiError";
+import User from "../models/user.model.js";
+import ApiError from "../utils/ApiError.js";
 
 const sendUser = async (req: Request, res: Response) => {
 

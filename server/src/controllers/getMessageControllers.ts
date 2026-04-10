@@ -1,5 +1,5 @@
-import message from '../models/message.model'
-import ApiError from '../utils/ApiError'
+import message from '../models/message.model.js'
+import ApiError from '../utils/ApiError.js'
 import { Request, Response } from 'express'
 const getMessage = async (req:Request, res:Response) => {
     const {conversationId} = req.params

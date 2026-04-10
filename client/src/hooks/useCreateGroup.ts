@@ -9,7 +9,7 @@ interface UseCreateGroupOptions {
   onGroupCreated: () => void;
 }
 
-export function useCreateGroup({ conversations, onGroupCreated }: UseCreateGroupOptions) {
+export function useCreateGroup({ onGroupCreated }: UseCreateGroupOptions) {
   const [isOpen, setIsOpen] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

@@ -21,6 +21,7 @@ const app = express()
 
 const allowedOrigins = [
     'http://localhost:5173',
+    'https://chat-application-virid-one.vercel.app'
 ];
 
 app.use(cors({

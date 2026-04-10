@@ -16,7 +16,6 @@ const signup = asyncHandler(async (req: Request, res: Response): Promise<void> =
         throw new ApiError(400, "All fields are required");
     }
 
-    // logger.info("user data from frontend : ", req.body)
 
     const existingUser = await userModel.findOne({ phoneNo });
 
@@ -63,7 +62,6 @@ const login = asyncHandler(async (req: Request, res: Response): Promise<void> =>
 
     const { accessToken, refreshToken } = await generateTokens(user._id.toString());
 
-    console.log("accessToken : ", accessToken)
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -72,10 +70,12 @@ const login = asyncHandler(async (req: Request, res: Response): Promise<void> =>
         .findOne({ phoneNo })
         .select("-password -refreshToken");
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     const options: CookieOptions = {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax"
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax"
     };
 
     // console.log("loggedinUser : ", loggedInUser)
@@ -107,7 +107,7 @@ const logout = asyncHandler(async (req : AuthRequest, res : Response): Promise<v
     const options: CookieOptions = {
         httpOnly: true,
         secure: false,
-        sameSite: "lax"
+        sameSite: "none"
     };
     res
     .status(200)

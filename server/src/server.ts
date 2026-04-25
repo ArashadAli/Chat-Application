@@ -23,7 +23,7 @@ export const io = new Server(server, {
 registerSocketHandlers(io)
 
 dbConnection().then(() => {
-  server.listen(process.env.PORT || 3000, () => {
+  server.listen(Number(process.env.PORT) || 3000, "0.0.0.0", () => {
     console.log(`server running at http://localhost:${process.env.PORT || 3000}`)
   })
 })

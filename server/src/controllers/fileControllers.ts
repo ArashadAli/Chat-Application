@@ -4,11 +4,11 @@ import mongoose from "mongoose";
 import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "../config/s3.config";
-import { AuthRequest } from "../types/authRequest.js";
-import Message from "../models/message.model.js";
-import Conversation from "../models/conversations.model.js";
-import asyncHandler from "../utils/asyncHandler.js";
-import ApiError from "../utils/ApiError.js";
+import { AuthRequest } from "../types/authRequest";
+import Message from "../models/message.model";
+import Conversation from "../models/conversations.model";
+import asyncHandler from "../utils/asyncHandler";
+import ApiError from "../utils/ApiError";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -1,12 +1,12 @@
 import { Request, Response } from "express"
 import { CookieOptions } from "express"
 import bcrypt from "bcrypt"
-import userModel from "../models/user.model.js"
-import { generateTokens } from "../utils/generateToken.js"
-import asyncHandler from "../utils/asyncHandler.js"
-import ApiError from "../utils/ApiError.js"
-import { AuthRequest } from "../types/authRequest.js"
-import { logger } from "../utils/logger.js"
+import userModel from "../models/user.model"
+import { generateTokens } from "../utils/generateToken"
+import asyncHandler from "../utils/asyncHandler"
+import ApiError from "../utils/ApiError"
+import { AuthRequest } from "../types/authRequest"
+import { logger } from "../utils/logger"
 
 const signup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
@@ -70,12 +70,12 @@ const login = asyncHandler(async (req: Request, res: Response): Promise<void> =>
         .findOne({ phoneNo })
         .select("-password -refreshToken");
 
-    const isProduction = process.env.NODE_ENV === "production";
+    // const isProduction = process.env.NODE_ENV === "production";
 
     const options: CookieOptions = {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "none" : "lax"
+        secure: false,
+        sameSite:"lax"
     };
 
     // console.log("loggedinUser : ", loggedInUser)
@@ -107,7 +107,7 @@ const logout = asyncHandler(async (req : AuthRequest, res : Response): Promise<v
     const options: CookieOptions = {
         httpOnly: true,
         secure: false,
-        sameSite: "none"
+        sameSite: "lax"
     };
     res
     .status(200)

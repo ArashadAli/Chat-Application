@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io"
-import Message from "../models/message.model.js"
-import Conversation from "../models/conversations.model.js"
-import User from "../models/user.model.js"
+import Message from "../models/message.model"
+import Conversation from "../models/conversations.model"
+import User from "../models/user.model"
 
 const onlineUsers = new Map<string, string>()
 const socketToUser = new Map<string, string>()
@@ -27,6 +27,8 @@ export function chatSocket(io: Server, socket: Socket) {
   })
 
   socket.on("send_message", async (data) => {
+
+    // console.log("send_msg data : ", data)
     const { conversationId, senderId, message } = data
 
     const conversation = await Conversation.findById(conversationId).select("participants")

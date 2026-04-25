@@ -1,7 +1,7 @@
 import { Response } from "express"
-import { AuthRequest } from "../types/authRequest.js"
+import { AuthRequest } from "../types/authRequest"
 
-import Conversation from "../models/conversations.model.js"
+import Conversation from "../models/conversations.model"
 
 const createIndividualConversation = async (req : AuthRequest, res : Response) => {
 

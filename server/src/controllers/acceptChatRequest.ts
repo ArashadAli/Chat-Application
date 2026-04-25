@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 
-import Conversation from "../models/conversations.model.js"
-import ChatRequest from "../models/chatRequest.model.js"
+import Conversation from "../models/conversations.model"
+import ChatRequest from "../models/chatRequest.model"
 
 const acceptChatRequest = async (req : Request, res : Response)=>{
 

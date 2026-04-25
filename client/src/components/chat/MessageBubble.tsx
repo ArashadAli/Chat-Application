@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Check, CheckCheck, FileText, Pencil, Trash2, X, Check as CheckIcon } from "lucide-react";
+import {
+  Check, CheckCheck, FileText, Pencil,
+  Trash2, X, Check as CheckIcon, Download
+} from "lucide-react";
 import type { Message, MessageState } from "../../schemas/chat/conversationDetailSchema";
 import { useAuthStore } from "../../store/authStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,8 +18,6 @@ interface Props {
   onMessageDeleted: (messageId: string) => void;
 }
 
-// ── Tick ──────────────────────────────────────────────────────────────────────
-
 function resolveTick(message: Message, myId: string): MessageState {
   const recipientStatuses = message.status.filter((s) => s.userId !== myId);
   if (recipientStatuses.length === 0) return "sent";
@@ -26,12 +27,10 @@ function resolveTick(message: Message, myId: string): MessageState {
 }
 
 function TickIcon({ state }: { state: MessageState }) {
-  if (state === "read") return <CheckCheck className="w-3.5 h-3.5 text-sky-300" />;
-  if (state === "delivered") return <CheckCheck className="w-3.5 h-3.5 text-white/55" />;
-  return <Check className="w-3.5 h-3.5 text-white/55" />;
+  if (state === "read") return <CheckCheck className="w-3.5 h-3.5 text-indigo-200" />;
+  if (state === "delivered") return <CheckCheck className="w-3.5 h-3.5 text-white/40" />;
+  return <Check className="w-3.5 h-3.5 text-white/40" />;
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -43,371 +42,305 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function avatarGradient(name: string) {
-  const palette = [
-    "from-rose-400 to-pink-500", "from-orange-400 to-amber-500",
-    "from-emerald-400 to-teal-500", "from-sky-400 to-blue-500",
-    "from-violet-400 to-purple-500",
-  ];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h += name.charCodeAt(i);
-  return palette[h % palette.length];
+const COLORS = [
+  ["#ef4444","#dc2626"], ["#f97316","#ea580c"], ["#10b981","#059669"],
+  ["#3b82f6","#2563eb"], ["#8b5cf6","#7c3aed"], ["#ec4899","#db2777"],
+  ["#06b6d4","#0891b2"], ["#f59e0b","#d97706"],
+];
+function getColors(name: string) {
+  let h = 0; for (const c of name) h += c.charCodeAt(0);
+  return COLORS[h % COLORS.length];
 }
 
 // ── Context menu ──────────────────────────────────────────────────────────────
-
-interface ContextMenuProps {
-  isOwn: boolean;
-  messageType: string;
-  position: { x: number; y: number };
-  onEdit: () => void;
-  onDelete: () => void;
-  onClose: () => void;
-}
-
-function ContextMenu({ isOwn, messageType, position, onEdit, onDelete, onClose }: ContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
-
+function ContextMenu({ messageType, position, onEdit, onDelete, onClose }: {
+  messageType: string; position: { x: number; y: number };
+  onEdit: () => void; onDelete: () => void; onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, [onClose]);
 
   return (
-    <div
-      ref={menuRef}
-      className="fixed z-50 min-w-[130px] rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-xl shadow-black/10 overflow-hidden py-1"
-      style={{ top: position.y, left: position.x }}
+    <div ref={ref} style={{ top: position.y, left: position.x }}
+      className="fixed z-[999] min-w-[148px] py-1.5 rounded-2xl bg-white dark:bg-neutral-800 shadow-2xl shadow-black/20 border border-neutral-100 dark:border-neutral-700/60 overflow-hidden"
     >
-      {/* Edit — only for own text messages */}
-      {isOwn && messageType === "text" && (
-        <button
-          onClick={() => { onEdit(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+      {messageType === "text" && (
+        <button onClick={() => { onEdit(); onClose(); }}
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
         >
-          <Pencil className="w-3.5 h-3.5 text-sky-500" />
-          Edit
+          <Pencil className="w-3.5 h-3.5 text-indigo-500" /> Edit
         </button>
       )}
-
-      {/* Delete — only for own messages */}
-      {isOwn && (
-        <button
-          onClick={() => { onDelete(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Delete
-        </button>
-      )}
+      <button onClick={() => { onDelete(); onClose(); }}
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+      >
+        <Trash2 className="w-3.5 h-3.5" /> Delete
+      </button>
     </div>
   );
 }
 
 // ── Image bubble ──────────────────────────────────────────────────────────────
-
 function ImageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
   const file = message.fileMetadata!;
   const [imgUrl, setImgUrl] = useState<string | null>(null);
-  const [isLoadingUrl, setIsLoadingUrl] = useState(true);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dlPct, setDlPct] = useState(0);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     getFileViewUrl(file.fileName)
-      .then((url) => { if (!cancelled) setImgUrl(url); })
-      .catch(() => { if (!cancelled) setImgUrl(null); })
-      .finally(() => { if (!cancelled) setIsLoadingUrl(false); });
+      .then((u) => { if (!cancelled) setImgUrl(u); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [file.fileName]);
 
-  async function handleDownload(e: React.MouseEvent) {
+  async function dl(e: React.MouseEvent) {
     e.stopPropagation();
-    if (isDownloading) return;
-    setIsDownloading(true);
-    setDownloadProgress(0);
-    try {
-      await downloadFileWorker(file.fileName, file.originalName, (pct) => setDownloadProgress(pct));
-    } finally {
-      setIsDownloading(false);
-      setDownloadProgress(0);
-    }
+    if (downloading) return;
+    setDownloading(true);
+    try { await downloadFileWorker(file.fileName, file.originalName, setDlPct); }
+    finally { setDownloading(false); setDlPct(0); }
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <div
-        className="relative rounded-xl overflow-hidden max-w-[260px] cursor-pointer group bg-neutral-200 dark:bg-neutral-700 min-h-[120px] flex items-center justify-center"
-        onClick={() => imgUrl && window.open(imgUrl, "_blank")}
-      >
-        {isLoadingUrl ? (
-          <div className="w-full h-32 flex items-center justify-center">
-            <svg className="w-5 h-5 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+    <div className="relative rounded-xl overflow-hidden cursor-pointer group" style={{ maxWidth: 240 }}
+      onClick={() => imgUrl && window.open(imgUrl, "_blank")}>
+      {loading ? (
+        <div className="w-52 h-36 flex items-center justify-center bg-black/10 rounded-xl">
+          <svg className="w-5 h-5 animate-spin text-white/60" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+        </div>
+      ) : imgUrl ? (
+        <>
+          <img src={imgUrl} alt={file.originalName} className="max-w-[240px] w-full object-cover block rounded-xl" loading="lazy"/>
+          <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-xl">
+            <button onClick={dl} className="p-2.5 bg-white/20 backdrop-blur rounded-full border border-white/25 hover:bg-white/35 transition-colors">
+              {downloading
+                ? <CircularProgress percent={dlPct} size={32} strokeWidth={3} color="#fff" trackColor="rgba(255,255,255,0.2)"/>
+                : <Download className="w-4 h-4 text-white"/>}
+            </button>
           </div>
-        ) : imgUrl ? (
-          <>
-            <img src={imgUrl} alt={file.originalName} className="w-full object-cover rounded-xl" loading="lazy" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-              <button onClick={handleDownload}>
-                {isDownloading
-                  ? <CircularProgress percent={downloadProgress} size={44} strokeWidth={3} color="#ffffff" trackColor="rgba(255,255,255,0.2)" />
-                  : <div className="p-2 bg-white/20 backdrop-blur rounded-full hover:bg-white/30 transition-colors">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                    </div>
-                }
-              </button>
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-neutral-400 p-4">Image unavailable</p>
-        )}
-      </div>
-      {message.content && message.content !== file.originalName && (
-        <p className={`text-sm ${isOwn ? "text-white/90" : "text-neutral-800 dark:text-neutral-200"}`}>
-          {message.content}
-        </p>
+        </>
+      ) : (
+        <div className="w-40 h-24 flex items-center justify-center rounded-xl bg-black/10">
+          <p className="text-xs text-white/50">Unavailable</p>
+        </div>
       )}
     </div>
   );
 }
 
 // ── File bubble ───────────────────────────────────────────────────────────────
-
 function FileBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
   const file = message.fileMetadata!;
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadDone, setDownloadDone] = useState(false);
+  const [dlPct, setDlPct] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+  const [done, setDone] = useState(false);
 
-  async function handleDownload(e: React.MouseEvent) {
+  async function dl(e: React.MouseEvent) {
     e.stopPropagation();
-    if (isDownloading) return;
-    setIsDownloading(true);
-    setDownloadProgress(0);
-    setDownloadDone(false);
+    if (downloading) return;
+    setDownloading(true); setDone(false);
     try {
-      await downloadFileWorker(file.fileName, file.originalName, (pct) => setDownloadProgress(pct));
-      setDownloadDone(true);
-      setTimeout(() => { setIsDownloading(false); setDownloadDone(false); setDownloadProgress(0); }, 1500);
-    } catch {
-      setIsDownloading(false);
-      setDownloadProgress(0);
-    }
+      await downloadFileWorker(file.fileName, file.originalName, setDlPct);
+      setDone(true);
+      setTimeout(() => { setDownloading(false); setDone(false); setDlPct(0); }, 1500);
+    } catch { setDownloading(false); setDlPct(0); }
   }
 
   return (
-    <div className="flex items-center gap-3 min-w-[220px] max-w-[280px] p-1">
-      <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${isOwn ? "bg-white/20" : "bg-neutral-100 dark:bg-neutral-700"}`}>
-        {isDownloading
-          ? <CircularProgress percent={downloadProgress} size={36} strokeWidth={3} color={isOwn ? "#ffffff" : "#0ea5e9"} trackColor={isOwn ? "rgba(255,255,255,0.2)" : "#e2e8f0"} />
-          : <FileText className={`w-5 h-5 ${isOwn ? "text-white" : "text-violet-500"}`} />
-        }
+    <div className="flex items-center gap-3" style={{ minWidth: 200, maxWidth: 260 }}>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isOwn ? "bg-white/20" : "bg-indigo-100 dark:bg-indigo-500/20"}`}>
+        {downloading
+          ? <CircularProgress percent={dlPct} size={32} strokeWidth={3} color={isOwn ? "#fff" : "#6366f1"} trackColor={isOwn ? "rgba(255,255,255,0.2)" : "rgba(99,102,241,0.2)"}/>
+          : <FileText className={`w-5 h-5 ${isOwn ? "text-white/80" : "text-indigo-500"}`}/>}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-xs font-semibold truncate ${isOwn ? "text-white" : "text-neutral-900 dark:text-white"}`}>{file.originalName}</p>
-        <p className={`text-[10px] mt-0.5 ${downloadDone ? "text-emerald-400 font-medium" : isDownloading ? (isOwn ? "text-white/60" : "text-sky-500") : (isOwn ? "text-white/50" : "text-neutral-400 dark:text-neutral-500")}`}>
-          {downloadDone ? "✓ Downloaded" : isDownloading ? `${downloadProgress}% — ${formatBytes(Math.round(file.size * downloadProgress / 100))} / ${formatBytes(file.size)}` : formatBytes(file.size)}
+        <p className={`text-xs font-semibold truncate ${isOwn ? "text-white" : "text-neutral-800 dark:text-neutral-100"}`}>{file.originalName}</p>
+        <p className={`text-[10px] mt-0.5 ${done ? "text-emerald-400" : downloading ? (isOwn ? "text-white/60" : "text-indigo-400") : (isOwn ? "text-white/50" : "text-neutral-400 dark:text-neutral-500")}`}>
+          {done ? "✓ Saved" : downloading ? `${dlPct}%` : formatBytes(file.size)}
         </p>
       </div>
-      <button onClick={handleDownload} disabled={isDownloading} className={`shrink-0 p-1.5 rounded-lg transition-colors ${isOwn ? "hover:bg-white/20 text-white/70 hover:text-white" : "hover:bg-neutral-200 dark:hover:bg-neutral-600 text-neutral-400"}`}>
-        {!isDownloading && (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-        )}
+      <button onClick={dl} disabled={downloading}
+        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all active:scale-90 disabled:opacity-40 ${isOwn ? "bg-white/15 hover:bg-white/25 text-white/70" : "bg-neutral-100 dark:bg-white/8 hover:bg-neutral-200 dark:hover:bg-white/12 text-neutral-500 dark:text-neutral-400"}`}>
+        {!downloading && <Download className="w-3.5 h-3.5"/>}
       </button>
     </div>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function MessageBubble({ message, showAvatar, onMessageUpdated, onMessageDeleted }: Props) {
   const myId = useAuthStore((s) => s.user?._id ?? "");
-
-  const sender =
-    typeof message.senderId === "object" && message.senderId !== null
-      ? message.senderId
-      : { _id: String(message.senderId), username: "?", profilePic: "" };
+  const sender = typeof message.senderId === "object" && message.senderId !== null
+    ? message.senderId
+    : { _id: String(message.senderId), username: "?", profilePic: "" };
 
   const isOwn = sender._id === myId;
   const tickState = isOwn ? resolveTick(message, myId) : null;
+  const isFile = message.messageType === "file" || message.messageType === "image";
+  const [c1, c2] = getColors(sender.username ?? "?");
   const initials = (sender.username ?? "?").slice(0, 2).toUpperCase();
-  const isFileMessage = message.messageType === "file" || message.messageType === "image";
 
-  // ── Context menu state ────────────────────────────────────────────────────
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editVal, setEditVal] = useState(message.content);
+  const [saving, setSaving] = useState(false);
+  const editRef = useRef<HTMLInputElement>(null);
 
-  function handleContextMenu(e: React.MouseEvent) {
-    if (!isOwn) return; // Sirf apne messages pe context menu
+  useEffect(() => { if (editing) { editRef.current?.focus(); editRef.current?.select(); } }, [editing]);
+
+  function onCtx(e: React.MouseEvent) {
+    if (!isOwn) return;
     e.preventDefault();
-    // Menu ko screen ke andar rakhne ke liye adjust karo
-    const x = Math.min(e.clientX, window.innerWidth - 160);
-    const y = Math.min(e.clientY, window.innerHeight - 100);
-    setContextMenu({ x, y });
+    setCtxMenu({ x: Math.min(e.clientX, window.innerWidth - 180), y: Math.min(e.clientY, window.innerHeight - 120) });
   }
 
-  // ── Edit state ────────────────────────────────────────────────────────────
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(message.content);
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const editInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditing) {
-      editInputRef.current?.focus();
-      editInputRef.current?.select();
-    }
-  }, [isEditing]);
-
-  async function handleSaveEdit() {
-    if (!editValue.trim() || editValue.trim() === message.content) {
-      setIsEditing(false);
-      return;
-    }
-    setIsSavingEdit(true);
+  async function saveEdit() {
+    const t = editVal.trim();
+    if (!t || t === message.content) { setEditing(false); return; }
+    setSaving(true);
     try {
-      const res = await updateMsgWorker(message._id, editValue.trim());
+      const res = await updateMsgWorker(message._id, t);
       onMessageUpdated(res.message);
-      setIsEditing(false);
-      toast.success("Message updated");
+      setEditing(false);
+      toast.success("Updated");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? "Failed to update");
-    } finally {
-      setIsSavingEdit(false);
-    }
+      toast.error(err?.response?.data?.message ?? "Failed");
+    } finally { setSaving(false); }
   }
 
-  function handleEditKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") handleSaveEdit();
-    if (e.key === "Escape") { setIsEditing(false); setEditValue(message.content); }
-  }
-
-  // ── Delete ────────────────────────────────────────────────────────────────
   async function handleDelete() {
     try {
       await deleteMsgWorker(message._id);
       onMessageDeleted(message._id);
-      toast.success("Message deleted");
+      toast.success("Deleted");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? "Failed to delete");
+      toast.error(err?.response?.data?.message ?? "Failed");
     }
   }
 
   return (
     <>
       <div
-        className={`flex items-end gap-2 mb-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
-        onContextMenu={handleContextMenu}
+        onContextMenu={onCtx}
+        className={`flex items-end gap-2 px-3 sm:px-4 mb-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
       >
-        {/* Avatar */}
-        <div className="w-7 shrink-0 self-end mb-0.5">
-          {!isOwn && showAvatar ? (
-            <Avatar className="w-7 h-7">
-              <AvatarImage src={sender.profilePic} alt={sender.username} />
-              <AvatarFallback className={`bg-gradient-to-br ${avatarGradient(sender.username ?? "?")} text-white text-[9px] font-bold`}>
+        {/* Avatar slot — always present to maintain alignment */}
+        <div className="w-8 h-8 shrink-0 self-end mb-0.5">
+          {!isOwn && showAvatar && (
+            <Avatar className="w-8 h-8 rounded-xl">
+              <AvatarImage src={sender.profilePic} alt={sender.username} className="rounded-xl"/>
+              <AvatarFallback className="rounded-xl text-white text-[10px] font-bold"
+                style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
                 {initials}
               </AvatarFallback>
             </Avatar>
-          ) : null}
+          )}
         </div>
 
-        {/* Bubble */}
-        <div className={`
-          relative rounded-2xl shadow-sm
-          ${isFileMessage ? "px-3 py-2.5" : isEditing ? "px-3 py-2" : "px-3.5 pt-2 pb-[22px]"}
-          max-w-[70%] sm:max-w-[58%] lg:max-w-[50%]
-          ${isOwn
-            ? "bg-sky-500 text-white rounded-br-[4px]"
-            : "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white rounded-bl-[4px] border border-neutral-100 dark:border-neutral-700/60"
-          }
-          ${isOwn ? "cursor-context-menu" : ""}
-        `}>
+        {/* Bubble column */}
+        <div className={`flex flex-col gap-0.5 max-w-[68%] sm:max-w-[58%] lg:max-w-[50%] ${isOwn ? "items-end" : "items-start"}`}>
 
+          {/* Sender name — for received group messages */}
           {!isOwn && showAvatar && (
-            <p className="text-[10px] font-semibold text-sky-500 dark:text-sky-400 mb-1 leading-none">
+            <p className="text-[10px] font-bold px-1 leading-none mb-0.5" style={{ color: c1 }}>
               {sender.username}
             </p>
           )}
 
-          {isFileMessage ? (
-            <div>
-              {message.messageType === "image"
-                ? <ImageBubble message={message} isOwn={isOwn} />
-                : <FileBubble message={message} isOwn={isOwn} />
-              }
-              <div className="flex items-center justify-end gap-1 mt-1.5">
-                <span className={`text-[10px] tabular-nums leading-none ${isOwn ? "text-white/55" : "text-neutral-400 dark:text-neutral-500"}`}>
-                  {formatTime(message.createdAt)}
-                </span>
-                {isOwn && tickState && <TickIcon state={tickState} />}
-              </div>
-            </div>
-          ) : isEditing ? (
-            // ── Edit mode UI ──────────────────────────────────────────────
-            <div className="flex items-center gap-2 min-w-[180px]">
-              <input
-                ref={editInputRef}
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={handleEditKeyDown}
-                disabled={isSavingEdit}
-                className="flex-1 bg-white/20 text-white placeholder:text-white/50 rounded-lg px-2 py-1 text-sm outline-none border border-white/30 focus:border-white/60 min-w-0"
-              />
-              <button
-                onClick={handleSaveEdit}
-                disabled={isSavingEdit}
-                className="shrink-0 p-1 rounded-lg bg-white/20 hover:bg-white/30 transition-colors disabled:opacity-50"
-              >
-                {isSavingEdit
-                  ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                  : <CheckIcon className="w-3.5 h-3.5 text-white" />
+          {/* Bubble */}
+          <div className={[
+            "relative rounded-2xl shadow-sm",
+            isOwn
+              ? "rounded-br-[4px]"
+              : "rounded-bl-[4px]",
+            isFile
+              ? "px-3 py-2.5"
+              : editing
+              ? "px-3 py-2.5"
+              : "px-4 pt-2.5 pb-6",
+          ].join(" ")}
+            style={isOwn
+              ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)" }
+              : undefined
+            }
+          >
+            {/* Received bubble — use inline class with explicit bg */}
+            {!isOwn && (
+              <div className="absolute inset-0 rounded-2xl rounded-bl-[4px] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700/50 -z-10" />
+            )}
+
+            {/* File */}
+            {isFile && (
+              <div>
+                {message.messageType === "image"
+                  ? <ImageBubble message={message} isOwn={isOwn}/>
+                  : <FileBubble message={message} isOwn={isOwn}/>
                 }
-              </button>
-              <button
-                onClick={() => { setIsEditing(false); setEditValue(message.content); }}
-                className="shrink-0 p-1 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
-              >
-                <X className="w-3.5 h-3.5 text-white" />
-              </button>
-            </div>
-          ) : (
-            // ── Normal text message ───────────────────────────────────────
-            <>
-              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
-                {message.content}
-              </p>
-              <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1">
-                <span className={`text-[10px] tabular-nums leading-none ${isOwn ? "text-white/55" : "text-neutral-400 dark:text-neutral-500"}`}>
-                  {formatTime(message.createdAt)}
-                </span>
-                {isOwn && tickState && <TickIcon state={tickState} />}
+                <div className="flex items-center justify-end gap-1 mt-2">
+                  <span className={`text-[10px] tabular-nums ${isOwn ? "text-white/45" : "text-neutral-400 dark:text-neutral-500"}`}>
+                    {formatTime(message.createdAt)}
+                  </span>
+                  {isOwn && tickState && <TickIcon state={tickState}/>}
+                </div>
               </div>
-            </>
-          )}
+            )}
+
+            {/* Edit */}
+            {!isFile && editing && (
+              <div className="flex items-center gap-2" style={{ minWidth: 200 }}>
+                <input ref={editRef} value={editVal}
+                  onChange={(e) => setEditVal(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { setEditing(false); setEditVal(message.content); } }}
+                  disabled={saving}
+                  className="flex-1 min-w-0 bg-white/25 text-white placeholder:text-white/40 rounded-lg px-2.5 py-1.5 text-sm outline-none border border-white/30 focus:border-white/60"
+                />
+                <button onClick={saveEdit} disabled={saving} className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center shrink-0 transition-colors">
+                  {saving
+                    ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    : <CheckIcon className="w-3.5 h-3.5 text-white"/>}
+                </button>
+                <button onClick={() => { setEditing(false); setEditVal(message.content); }} className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center shrink-0 transition-colors">
+                  <X className="w-3.5 h-3.5 text-white"/>
+                </button>
+              </div>
+            )}
+
+            {/* Normal text */}
+            {!isFile && !editing && (
+              <>
+                <p className={`text-[13.5px] leading-relaxed break-words whitespace-pre-wrap ${isOwn ? "text-white" : "text-neutral-800 dark:text-neutral-100"}`}>
+                  {message.content}
+                </p>
+                <div className="absolute bottom-1.5 right-3 flex items-center gap-1">
+                  <span className={`text-[10px] tabular-nums leading-none ${isOwn ? "text-white/45" : "text-neutral-400 dark:text-neutral-500"}`}>
+                    {formatTime(message.createdAt)}
+                  </span>
+                  {isOwn && tickState && <TickIcon state={tickState}/>}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Context menu */}
-      {contextMenu && (
+      {ctxMenu && (
         <ContextMenu
-          isOwn={isOwn}
           messageType={message.messageType}
-          position={contextMenu}
-          onEdit={() => setIsEditing(true)}
+          position={ctxMenu}
+          onEdit={() => setEditing(true)}
           onDelete={handleDelete}
-          onClose={() => setContextMenu(null)}
+          onClose={() => setCtxMenu(null)}
         />
       )}
     </>

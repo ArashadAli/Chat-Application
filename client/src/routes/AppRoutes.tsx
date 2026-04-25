@@ -11,7 +11,7 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 
 //-----Timer Folder------
 
-import Timer from "@/pages/timerFolder/Timer";
+// import Timer from "@/pages/timerFolder/Timer";
 
 // ── Protected Route ───────────────────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ export default function AppRoutes() {
 
       {/* Below route path is temp after testing the timer i have to remove this */}
 
-      <Route path="/timer" element={<Timer/>} />
+      {/* <Route path="/timer" element={<Timer/>} /> */}
 
       <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />

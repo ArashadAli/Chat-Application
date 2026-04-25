@@ -1,8 +1,8 @@
 import express from 'express'
-import verifyJWT from '../middleware/authMiddleware.js'
-import getMessage from '../controllers/getMessageControllers.js'
-import sendMessage from '../controllers/sendMessage.js'
-import { updateMsg, deleteMsg } from '../controllers/message.controller.js'
+import verifyJWT from '../middleware/authMiddleware'
+import getMessage from '../controllers/getMessageControllers'
+import sendMessage from '../controllers/sendMessage'
+import { updateMsg, deleteMsg } from '../controllers/message.controller'
 
 const messageRoute = express.Router()
 

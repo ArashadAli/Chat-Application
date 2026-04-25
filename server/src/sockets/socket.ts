@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io"
-import { chatSocket } from "./socket.chats.js"
-import {disconnectSocket} from "./socket.chats.js"
-import { logger } from "../utils/logger.js"
+import { chatSocket } from "./socket.chats"
+import {disconnectSocket} from "./socket.chats"
+import { logger } from "../utils/logger"
 export default function registerSocketHandlers(io: Server) {
 
   io.on("connection", (socket: Socket) => {

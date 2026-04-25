@@ -1,9 +1,11 @@
 import { Response } from "express"
-import { AuthRequest } from "../types/authRequest.js"
-import Message from "../models/message.model.js"
-import Conversation from "../models/conversations.model.js"
+import { AuthRequest } from "../types/authRequest"
+import Message from "../models/message.model"
+import Conversation from "../models/conversations.model"
 
 const sendMessage = async (req : AuthRequest , res : Response)=>{
+
+// console.log("req url : ", req.url)
 
  const senderId = req.user?._id
  const { conversationId, content } = req.body

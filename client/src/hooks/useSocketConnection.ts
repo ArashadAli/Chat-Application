@@ -78,12 +78,13 @@ export function useSocketConnection({
   const msgDeletedRef = useRef(onMessageDeleted);
   msgDeletedRef.current = onMessageDeleted;
 
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
+
   useEffect(() => {
     if (!userId) return;
 
-    if (!socket.connected) socket.connect();
-    socket.emit("user_connected", userId);
-
+    // ── Event handlers ────────────────────────────────────────────────────
     function handleMessage(message: Message) { messageRef.current(message); }
     function handleStatusChange(change: StatusChange) { statusRef.current?.(change); }
     function handleNewChatRequest() { chatRequestRef.current?.(); }
@@ -93,6 +94,17 @@ export function useSocketConnection({
     function handleMessageUpdated(data: MessageUpdatedData) { msgUpdatedRef.current?.(data); }
     function handleMessageDeleted(data: MessageDeletedData) { msgDeletedRef.current?.(data); }
 
+    // ── Emit user_connected only after socket is confirmed connected ──────
+    // This fixes the "WebSocket closed before established" error.
+    // If socket is already connected, emit immediately.
+    // Otherwise, wait for the "connect" event.
+    function emitUserConnected() {
+      if (userIdRef.current) {
+        socket.emit("user_connected", userIdRef.current);
+      }
+    }
+
+    socket.on("connect", emitUserConnected);
     socket.on("receive_message", handleMessage);
     socket.on("user_status_changed", handleStatusChange);
     socket.on("new_chat_request", handleNewChatRequest);
@@ -102,7 +114,16 @@ export function useSocketConnection({
     socket.on("message_updated", handleMessageUpdated);
     socket.on("message_deleted", handleMessageDeleted);
 
+    // Connect (or re-use existing connection)
+    if (!socket.connected) {
+      socket.connect();
+    } else {
+      // Already connected — emit immediately
+      emitUserConnected();
+    }
+
     return () => {
+      socket.off("connect", emitUserConnected);
       socket.off("receive_message", handleMessage);
       socket.off("user_status_changed", handleStatusChange);
       socket.off("new_chat_request", handleNewChatRequest);
@@ -111,6 +132,7 @@ export function useSocketConnection({
       socket.off("group_created", handleGroupCreated);
       socket.off("message_updated", handleMessageUpdated);
       socket.off("message_deleted", handleMessageDeleted);
+      // Note: do NOT disconnect here — logout handles that
     };
   }, [userId]);
 }

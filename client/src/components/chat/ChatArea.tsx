@@ -34,12 +34,23 @@ export default function ChatArea({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
 
+  // Seed messages from REST fetch
   useEffect(() => {
     if (!isLoading) setMessages(history);
-  }, [isLoading]);
+  }, [isLoading, history]);
 
+  // Join socket room when conversation opens
   useEffect(() => {
-    socket.emit("join_conversation", conversation._id);
+    if (socket.connected) {
+      socket.emit("join_conversation", conversation._id);
+    } else {
+      // Wait for connect then join
+      function onConnect() {
+        socket.emit("join_conversation", conversation._id);
+      }
+      socket.once("connect", onConnect);
+      return () => { socket.off("connect", onConnect); };
+    }
   }, [conversation._id]);
 
   const normalizeSender = useCallback(
@@ -55,6 +66,7 @@ export default function ChatArea({
     [conversation.participants]
   );
 
+  // ── appendMessage (called by DashboardPage on receive_message) ────────────
   const appendMessage = useCallback(
     (msg: any) => {
       if (msg.conversationId !== conversation._id) return;
@@ -68,6 +80,7 @@ export default function ChatArea({
   );
   useEffect(() => { registerAppend(appendMessage); }, [registerAppend, appendMessage]);
 
+  // ── updateMessageStatus (tick updates) ───────────────────────────────────
   const updateMessageStatus = useCallback(
     (data: { messageId: string; conversationId: string; statuses: any[] }) => {
       if (data.conversationId !== conversation._id) return;
@@ -79,13 +92,15 @@ export default function ChatArea({
   );
   useEffect(() => { registerStatusUpdate(updateMessageStatus); }, [registerStatusUpdate, updateMessageStatus]);
 
-  // Socket: dusre user ne message update kiya
+  // ── Socket: another user updated a message ────────────────────────────────
   const handleSocketMsgUpdated = useCallback(
     (data: { messageId: string; conversationId: string; content: string; updatedMessage: any }) => {
       if (data.conversationId !== conversation._id) return;
       setMessages((prev) =>
         prev.map((msg) =>
-          msg._id !== data.messageId ? msg : { ...msg, content: data.updatedMessage?.content ?? data.content }
+          msg._id !== data.messageId
+            ? msg
+            : { ...msg, content: data.updatedMessage?.content ?? data.content }
         )
       );
     },
@@ -93,7 +108,7 @@ export default function ChatArea({
   );
   useEffect(() => { registerMsgUpdated(handleSocketMsgUpdated); }, [registerMsgUpdated, handleSocketMsgUpdated]);
 
-  // Socket: dusre user ne message delete kiya
+  // ── Socket: another user deleted a message ────────────────────────────────
   const handleSocketMsgDeleted = useCallback(
     (data: { messageId: string; conversationId: string }) => {
       if (data.conversationId !== conversation._id) return;
@@ -103,7 +118,7 @@ export default function ChatArea({
   );
   useEffect(() => { registerMsgDeleted(handleSocketMsgDeleted); }, [registerMsgDeleted, handleSocketMsgDeleted]);
 
-  // Apna message delete
+  // ── Own message deleted ───────────────────────────────────────────────────
   const handleMessageDeleted = useCallback(
     (messageId: string) => {
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
@@ -112,7 +127,7 @@ export default function ChatArea({
     [conversation._id, onMessageDeleted]
   );
 
-  // Apna message update
+  // ── Own message updated ───────────────────────────────────────────────────
   const handleMessageUpdated = useCallback(
     (updatedMessage: Message) => {
       setMessages((prev) =>
@@ -123,6 +138,9 @@ export default function ChatArea({
     [onMessageUpdated]
   );
 
+  // ── Send text message ─────────────────────────────────────────────────────
+  // Socket handler on backend saves to DB — this is correct.
+  // We emit via socket; the backend saves + broadcasts back.
   async function handleSend(content: string) {
     if (!content.trim() || !myId) return;
     setIsSending(true);
@@ -137,6 +155,7 @@ export default function ChatArea({
     }
   }
 
+  // ── File sent (after S3 upload) ───────────────────────────────────────────
   function handleFileSent(serverMessage: any) {
     const normalized = normalizeSender(serverMessage);
     setMessages((prev) => {
@@ -149,13 +168,9 @@ export default function ChatArea({
     });
   }
 
-  const other = !conversation.isGroup
-    ? (conversation.participants.find((p) => p._id !== myId) ?? conversation.participants[0])
-    : null;
-
   const displayName = conversation.isGroup
     ? (conversation.groupMetadata?.groupName ?? "Group")
-    : (other?.username ?? "");
+    : (conversation.participants.find((p) => p._id !== myId)?.username ?? "");
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-neutral-50 dark:bg-neutral-950">

@@ -29,11 +29,17 @@ export function useChatMessages({ conversationId, senderId }: UseChatMessagesOpt
    */
   const sendMessage = useCallback(
     async (content: string) => {
+
+       console.log("conversationId:");
+      // console.log("senderId:", senderId);
+      // console.log("content:", content);
+
       if (!conversationId || !senderId || !content.trim()) return;
 
       setIsSending(true);
       try {
         // Emit over socket — server will broadcast to all room members
+        
         socket.emit("send_message", {
           conversationId,
           senderId,
@@ -41,7 +47,7 @@ export function useChatMessages({ conversationId, senderId }: UseChatMessagesOpt
         });
 
         // Worker call for persistence / error visibility
-        await sendMessageWorker({ conversationId, senderId, content: content.trim() });
+    
       } finally {
         setIsSending(false);
       }

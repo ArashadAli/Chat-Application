@@ -1,6 +1,6 @@
 import {  Response } from "express";
-import chatRequest from "../models/chatRequest.model.js";
-import { AuthRequest } from "../types/authRequest.js";
+import chatRequest from "../models/chatRequest.model";
+import { AuthRequest } from "../types/authRequest";
 
 const getPendingRequest = async (req : AuthRequest, res : Response) => {
     

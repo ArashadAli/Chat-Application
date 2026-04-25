@@ -235,7 +235,7 @@ export default function MessageBubble({ message, showAvatar, onMessageUpdated, o
         onContextMenu={onCtx}
         className={`flex items-end gap-2 px-3 sm:px-4 mb-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
       >
-        {/* Avatar slot — always present to maintain alignment */}
+        {/* Avatar slot */}
         <div className="w-8 h-8 shrink-0 self-end mb-0.5">
           {!isOwn && showAvatar && (
             <Avatar className="w-8 h-8 rounded-xl">
@@ -251,36 +251,23 @@ export default function MessageBubble({ message, showAvatar, onMessageUpdated, o
         {/* Bubble column */}
         <div className={`flex flex-col gap-0.5 max-w-[68%] sm:max-w-[58%] lg:max-w-[50%] ${isOwn ? "items-end" : "items-start"}`}>
 
-          {/* Sender name — for received group messages */}
           {!isOwn && showAvatar && (
             <p className="text-[10px] font-bold px-1 leading-none mb-0.5" style={{ color: c1 }}>
               {sender.username}
             </p>
           )}
 
-          {/* Bubble */}
           <div className={[
             "relative rounded-2xl shadow-sm",
-            isOwn
-              ? "rounded-br-[4px]"
-              : "rounded-bl-[4px]",
-            isFile
-              ? "px-3 py-2.5"
-              : editing
-              ? "px-3 py-2.5"
-              : "px-4 pt-2.5 pb-6",
+            isOwn ? "rounded-br-[4px]" : "rounded-bl-[4px]",
+            isFile ? "px-3 py-2.5" : editing ? "px-3 py-2.5" : "px-4 pt-2.5 pb-6",
           ].join(" ")}
-            style={isOwn
-              ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)" }
-              : undefined
-            }
+            style={isOwn ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)" } : undefined}
           >
-            {/* Received bubble — use inline class with explicit bg */}
             {!isOwn && (
               <div className="absolute inset-0 rounded-2xl rounded-bl-[4px] bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700/50 -z-10" />
             )}
 
-            {/* File */}
             {isFile && (
               <div>
                 {message.messageType === "image"
@@ -296,7 +283,6 @@ export default function MessageBubble({ message, showAvatar, onMessageUpdated, o
               </div>
             )}
 
-            {/* Edit */}
             {!isFile && editing && (
               <div className="flex items-center gap-2" style={{ minWidth: 200 }}>
                 <input ref={editRef} value={editVal}
@@ -316,7 +302,6 @@ export default function MessageBubble({ message, showAvatar, onMessageUpdated, o
               </div>
             )}
 
-            {/* Normal text */}
             {!isFile && !editing && (
               <>
                 <p className={`text-[13.5px] leading-relaxed break-words whitespace-pre-wrap ${isOwn ? "text-white" : "text-neutral-800 dark:text-neutral-100"}`}>

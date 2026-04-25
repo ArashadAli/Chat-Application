@@ -23,28 +23,20 @@ export function useChatMessages({ conversationId, senderId }: UseChatMessagesOpt
   /**
    * Send a message:
    *  1. Emit via socket (real-time delivery).
-   *  2. Call sendMessageWorker as a reliable POST fallback / persistence layer.
-   *  3. Optimistically push the message to local state immediately.
+   *  2. Optimistically push the message to local state immediately.
    */
   const sendMessage = useCallback(
     async (content: string) => {
-
-       
-
       if (!conversationId || !senderId || !content.trim()) return;
 
       setIsSending(true);
       try {
         // Emit over socket — server will broadcast to all room members
-        
         socket.emit("send_message", {
           conversationId,
           senderId,
           message: content.trim(),
         });
-
-        // Worker call for persistence / error visibility
-    
       } finally {
         setIsSending(false);
       }

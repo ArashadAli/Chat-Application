@@ -6,16 +6,22 @@ import { generateTokens } from "../utils/generateToken"
 import asyncHandler from "../utils/asyncHandler"
 import ApiError from "../utils/ApiError"
 import { AuthRequest } from "../types/authRequest"
-import { logger } from "../utils/logger"
+
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const cookieOptions: CookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax"
+};
 
 const signup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-
     const { phoneNo, username, password } = req.body;
 
     if (!phoneNo || !username || !password) {
         throw new ApiError(400, "All fields are required");
     }
-
 
     const existingUser = await userModel.findOne({ phoneNo });
 
@@ -35,14 +41,10 @@ const signup = asyncHandler(async (req: Request, res: Response): Promise<void> =
         success: true,
         message: "user registered successfully",
     });
-
 });
 
 const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-
     const { phoneNo, password } = req.body;
-
-    // logger.info("login datails from frontend : ", req.body)
 
     if (!phoneNo || !password) {
         throw new ApiError(400, "Phone number and password required");
@@ -62,7 +64,6 @@ const login = asyncHandler(async (req: Request, res: Response): Promise<void> =>
 
     const { accessToken, refreshToken } = await generateTokens(user._id.toString());
 
-
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
@@ -70,50 +71,29 @@ const login = asyncHandler(async (req: Request, res: Response): Promise<void> =>
         .findOne({ phoneNo })
         .select("-password -refreshToken");
 
-    // const isProduction = process.env.NODE_ENV === "production";
-
-    const options: CookieOptions = {
-        httpOnly: true,
-        secure: false,
-        sameSite:"lax"
-    };
-
-    // console.log("loggedinUser : ", loggedInUser)
-
     res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
         .json({
             success: true,
             message: "Successfully logged in",
             user: loggedInUser
         });
-
 });
 
-const logout = asyncHandler(async (req : AuthRequest, res : Response): Promise<void> => {
+const logout = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
     await userModel.findByIdAndUpdate(
-      req.user?._id,
-      {
-        $set:{
-          refreshToken:undefined
-        }
-      },
-      {
-        new : true
-      }
-    )
-    const options: CookieOptions = {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax"
-    };
+        req.user?._id,
+        { $set: { refreshToken: undefined } },
+        { new: true }
+    );
+
     res
-    .status(200)
-    .clearCookie("accessToken",options)
-    .clearCookie("refreshToken",options)
-    .json({message:"user logged out"})
-})
+        .status(200)
+        .clearCookie("accessToken", cookieOptions)
+        .clearCookie("refreshToken", cookieOptions)
+        .json({ message: "user logged out" });
+});
 
 export default { signup, login, logout }

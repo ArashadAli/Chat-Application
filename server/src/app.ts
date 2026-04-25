@@ -21,7 +21,7 @@ const app = express()
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://chat-application-virid-one.vercel.app'
+    process.env.FRONTEND_URL
 ];
 
 app.use(cors({
@@ -36,7 +36,7 @@ app.use(cors({
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     credentials: true, // Cookies handle karne ke liye zaroori hai
     optionsSuccessStatus: 200 // Legacy browsers (IE11) ke liye
 }));

@@ -19,12 +19,6 @@ export function useChatMessages({ conversationId, senderId }: UseChatMessagesOpt
     if (message.conversationId !== conversationId) return;
     setMessages((prev) => [...prev, message]);
   }, [conversationId]);
-
-  /**
-   * Send a message:
-   *  1. Emit via socket (real-time delivery).
-   *  2. Optimistically push the message to local state immediately.
-   */
   const sendMessage = useCallback(
     async (content: string) => {
       if (!conversationId || !senderId || !content.trim()) return;

@@ -9,7 +9,7 @@ const server = http.createServer(app)
 const allowedOrigins = [
   "http://localhost:5173",
   "https://chat-application-virid-one.vercel.app",
-  process.env.origin,         
+  process.env.FRONTEND_URL,       
 ].filter(Boolean) as string[]
 
 export const io = new Server(server, {

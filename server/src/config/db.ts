@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 const dbConnection = async () => {
-    // Check if URI exists to avoid cryptic errors
     const uri = process.env.MONGODB_URI;
     
     if (!uri) {
@@ -10,7 +9,6 @@ const dbConnection = async () => {
     }
 
     try {
-        // Pass the DB name as an option instead of string math
         await mongoose.connect(uri, {
             dbName: "chat-application",
         });
@@ -18,7 +16,6 @@ const dbConnection = async () => {
         console.log("✅ Database connected successfully");
     } catch (error) {
         console.error("❌ DB Connection Error:", error);
-        // In production, you might want to notify an error tracking service here
         process.exit(1); 
     }
 };

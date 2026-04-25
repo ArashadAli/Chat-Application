@@ -85,7 +85,7 @@ function ContextMenu({ messageType, position, onEdit, onDelete, onClose }: {
 }
 
 // ── Image bubble ──────────────────────────────────────────────────────────────
-function ImageBubble({ message }: { message: Message; isOwn: boolean }) {
+function ImageBubble({ message }: { message: Message }) {
   const file = message.fileMetadata!;
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -284,7 +284,7 @@ export default function MessageBubble({ message, showAvatar, onMessageUpdated, o
             {isFile && (
               <div>
                 {message.messageType === "image"
-                  ? <ImageBubble message={message} isOwn={isOwn}/>
+                  ? <ImageBubble message={message}/>
                   : <FileBubble message={message} isOwn={isOwn}/>
                 }
                 <div className="flex items-center justify-end gap-1 mt-2">

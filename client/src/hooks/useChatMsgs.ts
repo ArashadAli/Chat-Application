@@ -29,9 +29,7 @@ export function useChatMessages({ conversationId, senderId }: UseChatMessagesOpt
   const sendMessage = useCallback(
     async (content: string) => {
 
-      //  console.log("conversationId:");
-      // console.log("senderId:", senderId);
-      // console.log("content:", content);
+       
 
       if (!conversationId || !senderId || !content.trim()) return;
 

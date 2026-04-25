@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react";
 import { socket } from "../socket/socket";
-import { sendMessageWorker } from "../workers/chat/sendMessageWorker";
 import type { Message } from "../schemas/chat/conversationDetailSchema";
 
 interface UseChatMessagesOptions {
@@ -30,7 +29,7 @@ export function useChatMessages({ conversationId, senderId }: UseChatMessagesOpt
   const sendMessage = useCallback(
     async (content: string) => {
 
-       console.log("conversationId:");
+      //  console.log("conversationId:");
       // console.log("senderId:", senderId);
       // console.log("content:", content);
 

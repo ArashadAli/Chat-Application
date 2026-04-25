@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent } fro
 import { Send, Paperclip, X, FileText, ImageIcon } from "lucide-react";
 import { uploadFileWorker } from "../../workers/fileUpload/uploadFile";
 import CircularProgress from "../common/CircularProgress";
-import { useAuthStore } from "@/store/authStore";
 
 interface Props {
   recipientName: string;

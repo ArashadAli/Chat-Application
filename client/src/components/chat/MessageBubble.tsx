@@ -85,7 +85,7 @@ function ContextMenu({ messageType, position, onEdit, onDelete, onClose }: {
 }
 
 // ── Image bubble ──────────────────────────────────────────────────────────────
-function ImageBubble({ message, isOwn }: { message: Message; isOwn: boolean }) {
+function ImageBubble({ message }: { message: Message; isOwn: boolean }) {
   const file = message.fileMetadata!;
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

@@ -21,7 +21,6 @@ export function useConversationDetails(conversationId: string | null) {
       setIsLoading(true);
       try {
         const res = await axiosInstance.get(`/user/conversation/${conversationId}`);
-        console.log("response from useConversationDetail file : ", res)
         const data = validate(conversationDetailsResSchema, res.data);
         if (!cancelled) setMessages(data.messages);
       } catch (err: any) {

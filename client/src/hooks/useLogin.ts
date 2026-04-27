@@ -1,5 +1,3 @@
-// src/hooks/useLogin.ts
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -21,6 +19,7 @@ export function useLogin() {
       const data = validate(loginResponseSchema, raw);
         
     //   console.log("user from backend : ", data.user)
+
       setUser(data.user);
       toast.success(data.message ?? "Login successful");
       navigate("/dashboard");

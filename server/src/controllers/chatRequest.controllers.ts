@@ -13,7 +13,7 @@ const sendChatRequest = async (req: AuthRequest, res: Response) => {
 
   const receiver = await User.findOne({ phoneNo })
 
-  console.log("receiver data : ", receiver)
+  // console.log("receiver data : ", receiver)
 
   if (!receiver) {
     return res.status(404).json({ message: "User not found" })

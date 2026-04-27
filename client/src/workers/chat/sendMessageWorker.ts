@@ -14,7 +14,8 @@ export interface SendMessageResponse {
 export async function sendMessageWorker(
   payload: SendMessagePayload
 ): Promise<SendMessageResponse> {
-  console.log("data from frontend : ", payload)
+  
+  // console.log("data from frontend : ", payload)
   const response = await axiosInstance.post("/user/message/sendMsg", payload);
   return response.data;
 }

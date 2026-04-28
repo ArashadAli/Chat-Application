@@ -26,9 +26,11 @@ export function chatSocket(io: Server, socket: Socket) {
     )
   })
 
+  
+
   socket.on("send_message", async (data) => {
 
-    // console.log("send_msg data : ", data)
+    // console.log("data.token : ", data)
     const { conversationId, senderId, message } = data
 
     const conversation = await Conversation.findById(conversationId).select("participants")

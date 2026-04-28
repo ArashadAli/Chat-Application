@@ -8,6 +8,7 @@ import swaggerSpec from "./config/swagger";
 import authRouter from './routes/auth.routes'
 import userRoute from './routes/conversation.routes';
 import messageRoute from './routes/message.routes';
+import profileRoute from './routes/profile.routes';
 import path from 'path';
 
 
@@ -45,6 +46,12 @@ app.use(express.json())
 app.use(cookieParser())
 
 
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+})
+
+
 app.use("/uploads", express.static(path.resolve("./uploads")))
 
 // swagger route
@@ -53,7 +60,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/auth", authRouter)
 app.use("/api/user", userRoute)
 app.use("/api/user/message", messageRoute)
-
+app.use("/api/user/profile", profileRoute)
 // userRoute
 
 

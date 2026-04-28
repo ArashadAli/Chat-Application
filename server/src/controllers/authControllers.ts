@@ -64,6 +64,8 @@ const login = asyncHandler(async (req: Request, res: Response): Promise<void> =>
 
     const { accessToken, refreshToken } = await generateTokens(user._id.toString());
 
+    console.log("Access Token:", accessToken);
+
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 

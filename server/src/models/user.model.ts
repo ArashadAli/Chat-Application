@@ -6,6 +6,8 @@ export interface IUser extends Document {
   username: string;
   password: string;
   profilePic?: string;
+  profilePicPublicId?: string;
+  quote?: string;
   isOnline: boolean;
   lastSeen?: Date;
   refreshToken?: string;
@@ -16,32 +18,41 @@ const userSchema = new Schema<IUser>(
     phoneNo: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     username: {
       type: String,
-      required: true
+      required: true,
     },
     password: {
       type: String,
-      required: true
+      required: true,
     },
     profilePic: {
-      type: String
+      type: String,
+      default: "",
+    },
+    profilePicPublicId: {
+      type: String,
+      default: "",
+    },
+    quote: {
+      type: String,
+      default: "Hey there! I am using ChatMet.",
+      maxlength: 139,
     },
     isOnline: {
       type: Boolean,
-      default: false
+      default: false,
     },
     lastSeen: {
-      type: Date
+      type: Date,
     },
     refreshToken: {
-        type: String
-    }
+      type: String,
+    },
   },
   { timestamps: true }
 );
-
 
 export default mongoose.model<IUser>("User", userSchema);

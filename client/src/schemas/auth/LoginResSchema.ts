@@ -5,6 +5,7 @@ export interface LoginUser {
   isOnline: boolean;
   createdAt: string;
   updatedAt: string;
+  profilePic?: string;
   __v: number;
 }
 

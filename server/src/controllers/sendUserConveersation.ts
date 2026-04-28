@@ -15,7 +15,7 @@ const sendUserConversation = asyncHandler(async (req: AuthRequest, res: Response
   const conversations = await Conversation.find({
     participants: userId
   })
-  .populate("participants", "username profilePic isOnline")
+  .populate("participants", "username profilePic isOnline phoneNo quote")
   .sort({ updatedAt: -1 })
 
   const formattedConversations = await Promise.all(

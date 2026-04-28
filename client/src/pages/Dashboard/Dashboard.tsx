@@ -238,6 +238,7 @@ export default function DashboardPage() {
           <ChatArea
             key={activeConversation._id}
             conversation={activeConversation}
+            allConversations={conversations}
             onBack={handleBack}
             registerAppend={registerAppend}
             registerStatusUpdate={registerStatusUpdate}

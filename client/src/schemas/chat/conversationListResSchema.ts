@@ -3,6 +3,8 @@ export interface ConversationParticipant {
   username: string;
   profilePic: string;
   isOnline: boolean;
+  phoneNo?: string;
+  quote?: string;
 }
 
 export interface ConversationLastMessage {

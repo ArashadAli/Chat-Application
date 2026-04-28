@@ -35,10 +35,10 @@ const sendConversationIdDetails = asyncHandler(
     // Deleted messages (isActive: false) fetch nahi honge
     const messages = await Message.find({
       conversationId,
-      isActive: true,        // ← yeh naya filter hai
+      isActive: true,
     })
       .sort({ createdAt: 1 })
-      .populate("senderId", "username profilePic");
+      .populate("senderId", "username profilePic isOnline phoneNo quote");
 
     res.status(200).json({
       success: true,

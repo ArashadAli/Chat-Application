@@ -27,92 +27,110 @@ function formatTime(iso?: string): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-function avatarGradient(name: string) {
-  const palette = [
-    "from-rose-400 to-pink-500",
-    "from-orange-400 to-amber-500",
-    "from-emerald-400 to-teal-500",
-    "from-sky-400 to-blue-500",
-    "from-violet-400 to-purple-500",
-    "from-fuchsia-400 to-pink-500",
-    "from-cyan-400 to-sky-500",
-    "from-lime-400 to-emerald-500",
-  ];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h += name.charCodeAt(i);
-  return palette[h % palette.length];
+const COLORS = [
+  ["#ef4444","#dc2626"], ["#f97316","#ea580c"], ["#10b981","#059669"],
+  ["#3b82f6","#2563eb"], ["#8b5cf6","#7c3aed"], ["#ec4899","#db2777"],
+  ["#06b6d4","#0891b2"], ["#f59e0b","#d97706"],
+];
+function getColors(name: string) {
+  let h = 0; for (const c of name) h += c.charCodeAt(0);
+  return COLORS[h % COLORS.length];
 }
 
 export default function ConversationItem({ conversation, isActive, onClick }: Props) {
   const myId = useAuthStore((s) => s.user?._id ?? "");
   const isGroup = conversation.isGroup;
   const other = !isGroup ? getOther(conversation, myId) : null;
-  const unreadCount = conversation.unreadCount;
-  const hasUnread = unreadCount > 0;
+  const hasUnread = conversation.unreadCount > 0;
 
   const displayName = isGroup
     ? (conversation.groupMetadata?.groupName ?? "Group")
     : (other?.username ?? "");
 
   const initials = displayName.slice(0, 2).toUpperCase();
+  const [c1, c2] = getColors(displayName);
+
+  // Profile pic: group pic or user's profilePic (can be empty string → fallback to initials)
+  const pic = isGroup
+    ? (conversation.groupMetadata?.groupPic ?? "")
+    : (other?.profilePic ?? "");
 
   return (
     <button
       onClick={onClick}
       className={`
         w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left
-        transition-all duration-150 relative
+        transition-all duration-150 relative group
         ${isActive
-          ? "bg-sky-50 dark:bg-sky-950/50 border border-sky-200/70 dark:border-sky-800/50 shadow-sm"
+          ? "bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/40 shadow-sm"
           : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50 border border-transparent"
         }
       `}
     >
+      {/* Active indicator bar */}
       {isActive && (
-        <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-sky-500" />
+        <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-indigo-500" />
       )}
 
       {/* Avatar */}
       <div className="relative shrink-0">
         {isGroup ? (
-          // Group avatar — gradient with users icon
-          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(displayName)} flex items-center justify-center ring-2 ring-white dark:ring-neutral-900`}>
-            <Users className="w-4 h-4 text-white" />
+          <div
+            className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden"
+            style={{ background: pic ? undefined : `linear-gradient(135deg, ${c1}, ${c2})` }}
+          >
+            {pic
+              ? <img src={pic} alt={displayName} className="w-full h-full object-cover" />
+              : <Users className="w-4.5 h-4.5 text-white" style={{ width: 18, height: 18 }} />
+            }
           </div>
         ) : (
           <>
-            <Avatar className="w-10 h-10 ring-2 ring-white dark:ring-neutral-900">
-              <AvatarImage src={other?.profilePic} alt={other?.username} />
-              <AvatarFallback className={`bg-gradient-to-br ${avatarGradient(other?.username ?? "")} text-white text-xs font-bold`}>
+            <Avatar className="w-11 h-11 rounded-2xl shadow-sm">
+              {/* AvatarImage only renders if src is non-empty */}
+              <AvatarImage
+                src={pic}
+                alt={other?.username}
+                className="rounded-2xl object-cover"
+              />
+              <AvatarFallback
+                className="rounded-2xl text-white text-xs font-bold"
+                style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}
+              >
                 {initials}
               </AvatarFallback>
             </Avatar>
+            {/* Online dot */}
             <span className={`
-              absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2
-              border-white dark:border-neutral-900
+              absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full
+              border-2 border-white dark:border-neutral-900 transition-colors
               ${other?.isOnline ? "bg-emerald-400" : "bg-neutral-300 dark:bg-neutral-600"}
             `} />
           </>
         )}
       </div>
 
-      {/* Text */}
+      {/* Text content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-1 mb-0.5">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className={`text-[13px] font-semibold truncate leading-snug ${
-              isActive ? "text-sky-700 dark:text-sky-300" : "text-neutral-900 dark:text-white"
+              isActive
+                ? "text-indigo-700 dark:text-indigo-300"
+                : "text-neutral-900 dark:text-white"
             }`}>
               {displayName}
             </span>
             {isGroup && (
-              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 leading-none">
                 GROUP
               </span>
             )}
           </div>
           <span className={`text-[10px] shrink-0 tabular-nums ${
-            hasUnread ? "text-sky-500 font-semibold" : "text-neutral-400 dark:text-neutral-500"
+            hasUnread
+              ? "text-indigo-500 font-semibold"
+              : "text-neutral-400 dark:text-neutral-500"
           }`}>
             {formatTime(conversation.lastMessage?.createdAt)}
           </span>
@@ -127,8 +145,8 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
             {conversation.lastMessage?.content ?? "No messages yet"}
           </p>
           {hasUnread && (
-            <Badge className="shrink-0 h-[18px] min-w-[18px] px-1.5 text-[10px] font-bold bg-sky-500 hover:bg-sky-500 text-white rounded-full border-0">
-              {unreadCount > 99 ? "99+" : unreadCount}
+            <Badge className="shrink-0 h-[18px] min-w-[18px] px-1.5 text-[10px] font-bold bg-indigo-500 hover:bg-indigo-500 text-white rounded-full border-0">
+              {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
             </Badge>
           )}
         </div>

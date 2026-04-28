@@ -11,7 +11,7 @@ import ConversationItem from "./ConversationItem";
 import SearchUserCard from "./SearchUserCard";
 import ChatRequestModal from "./ChatRequestModal";
 import CreateGroupModal from "./createGroupModal";
-import ProfileModal from "../common/profileModal";
+import ProfileModal from "../common/ProfileModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
